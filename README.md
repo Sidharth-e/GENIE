@@ -145,6 +145,35 @@ To connect the frontend to the backend MCP server:
     - **URL**: `http://localhost:8000/mcp`
 4.  Click **"Save"**. The client will now be able to discover and use the tools defined in `genie_server/server.py`.
 
+### Example MCP Server Configurations
+
+#### Next.js MCP Server (stdio)
+
+```json
+{
+  "mcpServers": {
+    "next-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"]
+    }
+  }
+}
+```
+
+#### HTTP API Server (genie_server)
+
+```json
+{
+  "mcpServers": {
+    "genie-server": {
+      "type": "http",
+      "url": "http://localhost:8000/mcp"
+    }
+  }
+}
+```
+
 > [!NOTE]
 > The tools currently implemented in `genie_server/server.py` (e.g., `calculate_metrics`, `analyze_sentiment_keyword`, `get_stock_price`) are **examples** to demonstrate MCP integration. You should replace them with your own actual business logic or integrations.
 
