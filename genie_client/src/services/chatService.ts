@@ -7,6 +7,7 @@ export interface ChatServiceConfig {
     chat?: string;
     stream?: string;
     threads?: string;
+    feedback?: string;
   };
   headers?: Record<string, string>;
 }
@@ -18,14 +19,19 @@ const config: ChatServiceConfig = {
     chat: "/agent/chat",
     stream: "/agent/stream",
     threads: "/agent/threads",
+    feedback: "/agent/feedback",
   },
 };
 
-function getUrl(endpoint: keyof Required<ChatServiceConfig>["endpoints"]): string {
+function getUrl(
+  endpoint: keyof Required<ChatServiceConfig>["endpoints"],
+): string {
   return `${config.baseUrl}${config.endpoints?.[endpoint] || ""}`;
 }
 
-export async function fetchMessageHistory(threadId: string): Promise<MessageResponse[]> {
+export async function fetchMessageHistory(
+  threadId: string,
+): Promise<MessageResponse[]> {
   const response = await fetch(`${getUrl("history")}/${threadId}`, {
     headers: config.headers,
   });
@@ -52,7 +58,8 @@ export function createMessageStream(
   if (opts?.approveAllTools !== undefined)
     params.set("approveAllTools", opts.approveAllTools ? "true" : "false");
   if (opts?.agentId) params.set("agentId", opts.agentId);
-  if (opts?.documentIds?.length) params.set("documentIds", opts.documentIds.join(","));
+  if (opts?.documentIds?.length)
+    params.set("documentIds", opts.documentIds.join(","));
   return new EventSource(`${getUrl("stream")}?${params}`);
 }
 
@@ -101,4 +108,52 @@ export async function deleteThread(threadId: string): Promise<void> {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || "Failed to delete thread");
   }
+}
+
+// Message feedback functions
+export async function submitFeedback(
+  messageId: string,
+  threadId: string,
+  feedback: "like" | "dislike",
+): Promise<void> {
+  const response = await fetch(getUrl("feedback"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...config.headers,
+    },
+    body: JSON.stringify({ messageId, threadId, feedback }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to submit feedback");
+  }
+}
+
+export async function deleteFeedback(messageId: string): Promise<void> {
+  const response = await fetch(getUrl("feedback"), {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...config.headers,
+    },
+    body: JSON.stringify({ messageId }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to delete feedback");
+  }
+}
+
+export async function fetchFeedback(
+  threadId: string,
+): Promise<Record<string, "like" | "dislike">> {
+  const response = await fetch(`${getUrl("feedback")}?threadId=${threadId}`, {
+    headers: config.headers,
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to fetch feedback");
+  }
+  return await response.json();
 }

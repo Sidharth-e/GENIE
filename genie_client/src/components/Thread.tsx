@@ -135,6 +135,7 @@ export const Thread = ({ threadId, onFirstMessageSent }: ThreadProps) => {
                 ) : (
                   <MessageList
                     messages={messages}
+                    threadId={threadId}
                     approveToolExecution={approveToolExecution}
                     isLoading={isSending}
                   />

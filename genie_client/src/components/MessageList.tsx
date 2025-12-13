@@ -3,8 +3,9 @@ import { HumanMessage } from "./HumanMessage";
 import { AIMessage } from "./AIMessage";
 import { ErrorMessage } from "./ErrorMessage";
 import { LoadingMessage } from "./LoadingMessage";
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { getMessageId } from "@/services/messageUtils";
+import { fetchFeedback } from "@/services/chatService";
 import dynamic from "next/dynamic";
 import { useUISettings } from "@/contexts/UISettingsContext";
 import { parseChartData } from "./ChartRenderer";
@@ -23,6 +24,7 @@ const ToolMessage = dynamic(
 
 interface MessageListProps {
   messages: MessageResponse[];
+  threadId: string;
   approveToolExecution?: (
     toolCallId: string,
     action: "allow" | "deny",
@@ -69,11 +71,24 @@ const groupToolMessagesWithNextAI = (messages: MessageResponse[]) => {
 
 const MessageList = ({
   messages,
+  threadId,
   approveToolExecution,
   isLoading,
 }: MessageListProps) => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const { hideToolMessages } = useUISettings();
+  const [feedbackMap, setFeedbackMap] = useState<
+    Record<string, "like" | "dislike">
+  >({});
+
+  // Fetch existing feedback when thread loads
+  useEffect(() => {
+    if (threadId) {
+      fetchFeedback(threadId)
+        .then(setFeedbackMap)
+        .catch((err) => console.error("Failed to load feedback:", err));
+    }
+  }, [threadId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -123,6 +138,8 @@ const MessageList = ({
             <AIMessage
               key={aiMessageId}
               message={message}
+              threadId={threadId}
+              initialFeedback={feedbackMap[aiMessageId] || null}
               showApprovalButtons={
                 message === uniqueMessages[uniqueMessages.length - 1]
               }

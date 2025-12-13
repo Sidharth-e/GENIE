@@ -3,7 +3,8 @@ import type {
   ToolApprovalCallbacks,
   ContentItem,
 } from "@/types/message";
-import { Bot } from "lucide-react";
+import { Bot, Copy, ThumbsUp, ThumbsDown, Check } from "lucide-react";
+import { useState, useEffect } from "react";
 import rehypeKatex from "rehype-katex";
 import { cn } from "@/lib/utils";
 import {
@@ -11,6 +12,7 @@ import {
   hasToolCalls,
   getToolCalls,
 } from "@/services/messageUtils";
+import { submitFeedback, deleteFeedback } from "@/services/chatService";
 import { ToolCallDisplay } from "./ToolCallDisplay";
 import { useUISettings } from "@/contexts/UISettingsContext";
 import MDEditor from "@uiw/react-md-editor";
@@ -18,6 +20,8 @@ import { ChartRenderer, parseChartData, type ChartData } from "./ChartRenderer";
 
 interface AIMessageProps {
   message: MessageResponse;
+  threadId: string;
+  initialFeedback?: "like" | "dislike" | null;
   approvalCallbacks?: ToolApprovalCallbacks;
   showApprovalButtons?: boolean;
   toolMessages?: MessageResponse[]; // Tool responses for this AI message
@@ -52,6 +56,8 @@ const extractChartsFromToolMessages = (
 
 export const AIMessage = ({
   message,
+  threadId,
+  initialFeedback,
   approvalCallbacks,
   showApprovalButtons = false,
   toolMessages,
@@ -61,6 +67,17 @@ export const AIMessage = ({
   const toolCalls = getToolCalls(message);
   const { hideToolMessages } = useUISettings();
 
+  // State for action buttons
+  const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState<"like" | "dislike" | null>(
+    initialFeedback ?? null,
+  );
+
+  // Sync feedback state when initialFeedback prop changes (e.g., when loaded from DB)
+  useEffect(() => {
+    setFeedback(initialFeedback ?? null);
+  }, [initialFeedback]);
+
   // Extract charts from tool messages to render inline
   const charts = extractChartsFromToolMessages(toolMessages);
   const hasCharts = charts.length > 0;
@@ -68,6 +85,35 @@ export const AIMessage = ({
   // If tool messages are hidden and there's no text content, don't render anything
   const shouldShowTools = hasTools && !hideToolMessages;
   const hasVisibleContent = messageContent || shouldShowTools || hasCharts;
+
+  // Copy message content to clipboard
+  const handleCopy = async () => {
+    if (messageContent) {
+      await navigator.clipboard.writeText(messageContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Handle like/dislike feedback
+  const handleFeedback = async (type: "like" | "dislike") => {
+    const messageId = message.data?.id;
+    if (!messageId || !threadId) return;
+
+    try {
+      if (feedback === type) {
+        // Toggle off - delete feedback
+        await deleteFeedback(messageId);
+        setFeedback(null);
+      } else {
+        // Set new feedback
+        await submitFeedback(messageId, threadId, type);
+        setFeedback(type);
+      }
+    } catch (error) {
+      console.error("Failed to submit feedback:", error);
+    }
+  };
 
   if (!hasVisibleContent) {
     return null;
@@ -114,6 +160,51 @@ export const AIMessage = ({
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Action buttons: Copy, Like, Dislike */}
+        {messageContent && (
+          <div className="flex items-center gap-1 pl-1">
+            <button
+              onClick={handleCopy}
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-md transition-all duration-200",
+                "text-gray-400 hover:bg-gray-100 hover:text-gray-600",
+                copied && "text-green-500 hover:text-green-500",
+              )}
+              title={copied ? "Copied!" : "Copy to clipboard"}
+            >
+              {copied ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </button>
+            <button
+              onClick={() => handleFeedback("like")}
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-md transition-all duration-200",
+                "text-gray-400 hover:bg-gray-100 hover:text-gray-600",
+                feedback === "like" &&
+                  "bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-500",
+              )}
+              title="Like this response"
+            >
+              <ThumbsUp className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => handleFeedback("dislike")}
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-md transition-all duration-200",
+                "text-gray-400 hover:bg-gray-100 hover:text-gray-600",
+                feedback === "dislike" &&
+                  "bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-500",
+              )}
+              title="Dislike this response"
+            >
+              <ThumbsDown className="h-4 w-4" />
+            </button>
           </div>
         )}
 
