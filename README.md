@@ -43,7 +43,7 @@ The project fully embraces the **Model Context Protocol** for standardized tool 
 
 - **FastMCP Server**: The `genie_server` runs a FastMCP instance (`server.py`) exposing 50+ production-ready tools.
 - **Tool Selection**: The frontend (LangGraph agent) dynamically discovers and selects these MCP tools to fulfill user requests, enabling a decoupled and extensible architecture.
-- **Interactive Visualizations**: Charts (pie, bar, line, doughnut) and QR codes render inline in chat responses.
+- **Interactive Visualizations**: Charts (pie, bar, line, doughnut), Mermaid diagrams, Stats dashboards, and QR codes render inline in chat responses.
 
 #### 📊 Available MCP Tools
 
@@ -85,6 +85,8 @@ The project fully embraces the **Model Context Protocol** for standardized tool 
 | `generate_line_chart`       | Create multi-series line chart for trends           |
 | `generate_doughnut_chart`   | Create doughnut chart (pie with center hole)        |
 | `generate_comparison_chart` | Create grouped bar chart comparing two datasets     |
+| `generate_mermaid_diagram`  | Create Flowcharts, Sequence Diagrams, and more      |
+| `generate_stats_dashboard`  | Create KPI dashboards with trends and metrics       |
 
 </details>
 

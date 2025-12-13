@@ -9,6 +9,8 @@ import { fetchFeedback } from "@/services/chatService";
 import dynamic from "next/dynamic";
 import { parseChartData } from "./ChartRenderer";
 import { parseQRCodeData } from "./QRCodeRenderer";
+import { parseMermaidData } from "./MermaidRenderer";
+import { parseStatsData } from "./StatsRenderer";
 
 const ToolMessage = dynamic(
   () => import("./ToolMessage").then((m) => m.ToolMessage),
@@ -54,6 +56,28 @@ const isQRCodeToolMessage = (message: MessageResponse): boolean => {
   return qrData !== null;
 };
 
+// Helper function to check if tool message contains Mermaid data
+const isMermaidToolMessage = (message: MessageResponse): boolean => {
+  if (message.type !== "tool") return false;
+  const content = message.data?.content;
+  if (!content) return false;
+  const contentStr =
+    typeof content === "string" ? content : JSON.stringify(content);
+  const mermaidData = parseMermaidData(contentStr);
+  return mermaidData !== null;
+};
+
+// Helper function to check if tool message contains Stats data
+const isStatsToolMessage = (message: MessageResponse): boolean => {
+  if (message.type !== "tool") return false;
+  const content = message.data?.content;
+  if (!content) return false;
+  const contentStr =
+    typeof content === "string" ? content : JSON.stringify(content);
+  const statsData = parseStatsData(contentStr);
+  return statsData !== null;
+};
+
 // Group tool messages with the NEXT AI message that follows them
 // This way the chart appears in the summary message, not the tool-calling message
 const groupToolMessagesWithNextAI = (messages: MessageResponse[]) => {
@@ -66,7 +90,12 @@ const groupToolMessagesWithNextAI = (messages: MessageResponse[]) => {
     const msg = messages[i];
 
     if (msg.type === "tool") {
-      if (isChartToolMessage(msg) || isQRCodeToolMessage(msg)) {
+      if (
+        isChartToolMessage(msg) ||
+        isQRCodeToolMessage(msg) ||
+        isMermaidToolMessage(msg) ||
+        isStatsToolMessage(msg)
+      ) {
         chartToolMessages.push(msg);
       }
     }
@@ -160,7 +189,15 @@ const MessageList = ({
             />
           );
         } else if (message.type === "tool") {
-          // Skip rendering chart tool messages separately (they're rendered inline with AI)
+          // Skip rendering chart/visual tool messages separately (they're rendered inline with AI)
+          if (
+            isChartToolMessage(message) ||
+            isQRCodeToolMessage(message) ||
+            isMermaidToolMessage(message) ||
+            isStatsToolMessage(message)
+          ) {
+            return null;
+          }
 
           return <ToolMessage key={getMessageId(message)} message={message} />;
         } else if (message.type === "error") {

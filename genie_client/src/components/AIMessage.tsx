@@ -21,6 +21,12 @@ import {
   parseQRCodeData,
   type QRCodeData,
 } from "./QRCodeRenderer";
+import {
+  MermaidRenderer,
+  parseMermaidData,
+  type MermaidData,
+} from "./MermaidRenderer";
+import { StatsRenderer, parseStatsData, type StatsData } from "./StatsRenderer";
 
 interface AIMessageProps {
   message: MessageResponse;
@@ -75,6 +81,40 @@ const extractQRCodesFromToolMessages = (
   return qrCodes;
 };
 
+// Extract Mermaid diagrams from tool messages
+const extractMermaidDataFromToolMessages = (
+  toolMessages?: MessageResponse[],
+): MermaidData[] => {
+  if (!toolMessages) return [];
+
+  const diagrams: MermaidData[] = [];
+  for (const msg of toolMessages) {
+    const content = getContentAsString(msg.data?.content);
+    const mermaidData = parseMermaidData(content);
+    if (mermaidData) {
+      diagrams.push(mermaidData);
+    }
+  }
+  return diagrams;
+};
+
+// Extract Stats data from tool messages
+const extractStatsDataFromToolMessages = (
+  toolMessages?: MessageResponse[],
+): StatsData[] => {
+  if (!toolMessages) return [];
+
+  const stats: StatsData[] = [];
+  for (const msg of toolMessages) {
+    const content = getContentAsString(msg.data?.content);
+    const statsData = parseStatsData(content);
+    if (statsData) {
+      stats.push(statsData);
+    }
+  }
+  return stats;
+};
+
 export const AIMessage = ({
   message,
   threadId,
@@ -103,11 +143,20 @@ export const AIMessage = ({
   const hasCharts = charts.length > 0;
   const qrCodes = extractQRCodesFromToolMessages(toolMessages);
   const hasQRCodes = qrCodes.length > 0;
+  const mermaidDiagrams = extractMermaidDataFromToolMessages(toolMessages);
+  const hasMermaid = mermaidDiagrams.length > 0;
+  const statsData = extractStatsDataFromToolMessages(toolMessages);
+  const hasStats = statsData.length > 0;
 
   // If tool messages are hidden and there's no text content, don't render anything
   const shouldShowTools = hasTools;
   const hasVisibleContent =
-    messageContent || shouldShowTools || hasCharts || hasQRCodes;
+    messageContent ||
+    shouldShowTools ||
+    hasCharts ||
+    hasQRCodes ||
+    hasMermaid ||
+    hasStats;
 
   // Copy message content to clipboard
   const handleCopy = async () => {
@@ -148,7 +197,11 @@ export const AIMessage = ({
         <Bot className="text-primary h-5 w-5" />
       </div>
       <div className="max-w-[80%] space-y-3">
-        {(messageContent || hasCharts || hasQRCodes) && (
+        {(messageContent ||
+          hasCharts ||
+          hasQRCodes ||
+          hasMermaid ||
+          hasStats) && (
           <div
             className={cn(
               "rounded-2xl px-4 py-2",
@@ -194,6 +247,35 @@ export const AIMessage = ({
               >
                 {qrCodes.map((qr, index) => (
                   <QRCodeRenderer key={index} data={qr} />
+                ))}
+              </div>
+            )}
+
+            {/* Render Mermaid diagrams INSIDE the message bubble */}
+            {hasMermaid && (
+              <div
+                className={cn(
+                  "space-y-3",
+                  (messageContent || hasCharts || hasQRCodes) && "mt-4",
+                )}
+              >
+                {mermaidDiagrams.map((diagram, index) => (
+                  <MermaidRenderer key={index} data={diagram} />
+                ))}
+              </div>
+            )}
+
+            {/* Render Stats dashboards INSIDE the message bubble */}
+            {hasStats && (
+              <div
+                className={cn(
+                  "space-y-3",
+                  (messageContent || hasCharts || hasQRCodes || hasMermaid) &&
+                    "mt-4",
+                )}
+              >
+                {statsData.map((stats, index) => (
+                  <StatsRenderer key={index} data={stats} />
                 ))}
               </div>
             )}

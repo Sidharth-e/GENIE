@@ -319,3 +319,61 @@ def generate_comparison_chart(
     }
     
     return _create_chart_response(CHART_BAR, title, data, options)
+
+
+@mcp.tool()
+def generate_mermaid_diagram(
+    content: str,
+    description: str = "Mermaid Diagram"
+) -> Dict[str, Any]:
+    """
+    Generate a Mermaid diagram for visualization.
+    
+    Args:
+        content: The Mermaid diagram syntax string (e.g., "graph TD; A-->B;")
+        description: A brief description of what the diagram represents
+        
+    Returns:
+        Structured data that the UI can render as an interactive diagram.
+    """
+    return {
+        "_type": "mermaid",
+        "content": content,
+        "description": description
+    }
+
+
+@mcp.tool()
+def generate_stats_dashboard(
+    items: List[Dict[str, Any]],
+    title: str = "Statistics Dashboard"
+) -> Dict[str, Any]:
+    """
+    Generate a statistics dashboard with key metrics.
+    
+    Args:
+        items: List of stat items, where each item has:
+            - label: str (Required) - The name of the metric
+            - value: str/number (Required) - The value to display
+            - change: str (Optional) - The change string (e.g., "+12%")
+            - trend: str (Optional) - "up", "down", or "neutral"
+            - description: str (Optional) - Extra context
+        title: Dashboard title
+        
+    Example:
+        generate_stats_dashboard(
+            title="Overview",
+            items=[
+                {"label": "Revenue", "value": "$50k", "change": "+10%", "trend": "up"},
+                {"label": "Errors", "value": "12", "change": "-5%", "trend": "down"}
+            ]
+        )
+        
+    Returns:
+        Structured data that the UI can render as a stats dashboard.
+    """
+    return {
+        "_type": "stats",
+        "title": title,
+        "items": items
+    }
