@@ -1,13 +1,31 @@
-# GENIE (Graph Enabled Next Intelligent Environment)
+# GENIE - AI Agent Framework with LangGraph & MCP
 
-**GENIE** is a modern, full-stack template designed for building AI agents using **LangGraph.js** on the frontend and **Model Context Protocol (MCP)** on the backend. It combines a high-performance Next.js 15 client with a flexible Python server, offering a robust foundation for intelligent applications.
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
+![LangChain](https://img.shields.io/badge/LangChain-JS-green?logo=langchain)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-green?logo=mongodb)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
+> **Build powerful AI agents using LangGraph.js, LangChain, and Model Context Protocol (MCP).**
+>
+> GENIE is a production-ready full-stack framework for creating intelligent AI applications. It combines **Next.js 15** with **LangGraph.js** for frontend agent orchestration, and a **Python FastMCP server** with **50+ built-in tools** including calculators, converters, visualizations, and developer utilities.
+
+## 🎯 Why GENIE?
+
+- **Multi-Model Support**: Works with **Google Gemini**, **OpenAI GPT-4**, **Anthropic Claude**, and any LangChain-compatible LLM
+- **50+ MCP Tools**: Pre-built utilities for calculations, data conversion, web tools, code analysis, and interactive charts
+- **Interactive Visualizations**: Pie charts, bar charts, line graphs, and QR codes render directly in chat
+- **Multi-Agent Architecture**: Supervisor pattern with LangGraph for orchestrating specialized sub-agents
+- **Enterprise Auth**: NextAuth.js with Google OAuth, Azure AD, and customizable providers
+- **MongoDB Integration**: Built-in database tools for querying and storing data
+- **Extensible**: Easy to add custom MCP tools and new AI agents
 
 ## 📂 Project Structure
 
 The project is divided into two main components:
 
-- **`genie_client/`**: The frontend application built with Next.js, featuring LangGraph for agent and workflow orchestration.
-- **`genie_server/`**: The backend server powered by Python and FastMCP, providing tools and data access (including MongoDB integration).
+- **`genie_client/`**: Next.js 15 frontend with LangGraph.js, LangChain, TanStack Query, and Tailwind CSS
+- **`genie_server/`**: Python backend with FastMCP, MongoDB integration, and 50+ utility tools
 
 ## ✨ Key Features
 
