@@ -35,6 +35,10 @@ export const Thread = ({ threadId }: ThreadProps) => {
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(
     undefined,
   );
+  // Track initial tools from pending message (for Scenario 3/4)
+  const [initialTools, setInitialTools] = useState<string[] | undefined>(
+    undefined,
+  );
   const pendingMessageProcessedRef = useRef(false);
 
   // Handle pending message from NewChatView
@@ -48,6 +52,22 @@ export const Thread = ({ threadId }: ThreadProps) => {
         const pendingMessage: PendingMessage = JSON.parse(pendingMessageStr);
         sessionStorage.removeItem(PENDING_MESSAGE_KEY);
         pendingMessageProcessedRef.current = true;
+
+        // Extract tools from the pending message to persist in UI
+        if (pendingMessage.options?.tools) {
+          setInitialTools(pendingMessage.options.tools);
+        }
+
+        // Extract agent/provider/model from the pending message
+        if (pendingMessage.options?.agentId) {
+          setSelectedAgentId(pendingMessage.options.agentId);
+        }
+        if (pendingMessage.options?.provider) {
+          setProvider(pendingMessage.options.provider);
+        }
+        if (pendingMessage.options?.model) {
+          setModel(pendingMessage.options.model);
+        }
 
         // Send the pending message
         sendMessage(pendingMessage.text, pendingMessage.options);
@@ -76,6 +96,8 @@ export const Thread = ({ threadId }: ThreadProps) => {
         setSelectedAgentId(agent.id);
         setProvider(agent.provider);
         setModel(agent.modelName);
+        // Set initial tools from agent configuration
+        setInitialTools(agent.tools || []);
         agentRestoredRef.current = true;
       }
     }
@@ -150,6 +172,7 @@ export const Thread = ({ threadId }: ThreadProps) => {
               selectedAgentId={selectedAgentId}
               setSelectedAgentId={setSelectedAgentId}
               disableAgentSelection={messages.length > 0}
+              initialTools={initialTools}
             />
           </div>
         </div>

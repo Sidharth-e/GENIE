@@ -18,6 +18,8 @@ import {
   FileText,
   X,
   Trash2,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { uploadFile, deleteFile, UploadedFile } from "@/services/fileService";
 import { MessageOptions } from "@/types/message";
@@ -49,6 +51,8 @@ interface MessageInputProps {
   selectedAgentId?: string;
   setSelectedAgentId?: (agentId: string | undefined) => void;
   disableAgentSelection?: boolean;
+  // For Scenario 4: Pass initial tools when loading an existing thread
+  initialTools?: string[];
 }
 
 import { PROVIDER_CONFIG } from "@/constants/providers";
@@ -67,6 +71,7 @@ export const MessageInput = ({
   selectedAgentId: propsSelectedAgentId,
   setSelectedAgentId: propsSetSelectedAgentId,
   disableAgentSelection = false,
+  initialTools,
 }: MessageInputProps) => {
   const [message, setMessage] = useState("");
 
@@ -80,9 +85,38 @@ export const MessageInput = ({
   const [localSelectedAgentId, setLocalSelectedAgentId] = useState<
     string | undefined
   >(undefined);
-  const [selectedTools, setSelectedTools] = useState<string[]>([]);
-  const { data: mcpToolsData } = useMCPTools();
-  const { data: agents = [] } = useAgents();
+  const [selectedTools, setSelectedTools] = useState<string[]>(
+    initialTools || [],
+  );
+
+  // Initialize tools from initialTools prop when loading existing thread (Scenario 4)
+  const initialToolsAppliedRef = useRef(false);
+  useEffect(() => {
+    if (
+      initialTools &&
+      initialTools.length > 0 &&
+      !initialToolsAppliedRef.current
+    ) {
+      setSelectedTools(initialTools);
+      initialToolsAppliedRef.current = true;
+    }
+  }, [initialTools]);
+
+  // Hook data with loading/error states
+  const {
+    data: mcpToolsData,
+    isLoading: isLoadingTools,
+    error: toolsError,
+    refetch: refetchTools,
+  } = useMCPTools();
+
+  const {
+    data: agents = [],
+    isLoading: isLoadingAgents,
+    error: agentsError,
+    refetch: refetchAgents,
+  } = useAgents();
+
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [savePromptOpen, setSavePromptOpen] = useState(false);
 
@@ -363,60 +397,127 @@ export const MessageInput = ({
                 multiple
               />
               <DropdownMenu>
-                <DropdownMenuTrigger asChild disabled={disableAgentSelection}>
+                <DropdownMenuTrigger
+                  asChild
+                  disabled={disableAgentSelection || isLoadingAgents}
+                >
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    disabled={disableAgentSelection}
+                    disabled={disableAgentSelection || isLoadingAgents}
                     className="flex h-8 items-center gap-2 rounded-full px-2 sm:px-3 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
                   >
-                    <Bot className="h-4 w-4" />
+                    {isLoadingAgents ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : agentsError ? (
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    ) : (
+                      <Bot className="h-4 w-4" />
+                    )}
                     <span className="max-w-[100px] truncate text-xs hidden sm:inline-block">
-                      {selectedAgentId
-                        ? agents.find((a) => a.id === selectedAgentId)?.name
-                        : "Default Agent"}
+                      {isLoadingAgents
+                        ? "Loading..."
+                        : agentsError
+                          ? "Error"
+                          : selectedAgentId
+                            ? agents.find((a) => a.id === selectedAgentId)
+                                ?.name || "Agent"
+                            : "Default Agent"}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-[200px]">
                   <DropdownMenuLabel>Select Agent</DropdownMenuLabel>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSelectedAgentId(undefined);
-                      setSelectedTools([]);
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 flex items-center justify-center">
-                        {!selectedAgentId && <Check className="h-4 w-4" />}
-                      </div>
-                      <span>Default (No Agent)</span>
-                    </div>
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  {agents.map((agent) => (
-                    <DropdownMenuItem
-                      key={agent.id}
-                      onClick={() => {
-                        setSelectedAgentId(agent.id);
-                        if (agent) {
-                          setProvider(agent.provider);
-                          setModel(agent.modelName);
-                          setSelectedTools(agent.tools || []);
-                        }
-                      }}
-                    >
+
+                  {/* Loading State */}
+                  {isLoadingAgents && (
+                    <div className="p-3 space-y-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 flex items-center justify-center">
-                          {selectedAgentId === agent.id && (
-                            <Check className="h-4 w-4" />
-                          )}
-                        </div>
-                        <span>{agent.name}</span>
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          Loading agents...
+                        </span>
                       </div>
-                    </DropdownMenuItem>
-                  ))}
+                      <div className="space-y-1.5">
+                        <div className="h-6 w-full animate-pulse rounded bg-muted" />
+                        <div className="h-6 w-3/4 animate-pulse rounded bg-muted" />
+                        <div className="h-6 w-5/6 animate-pulse rounded bg-muted" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error State */}
+                  {agentsError && !isLoadingAgents && (
+                    <div className="p-3 text-center">
+                      <AlertCircle className="h-5 w-5 mx-auto text-destructive mb-2" />
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Failed to load agents
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          refetchAgents();
+                        }}
+                        className="h-7 text-xs"
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Retry
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Loaded State */}
+                  {!isLoadingAgents && !agentsError && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedAgentId(undefined);
+                          setSelectedTools([]);
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 flex items-center justify-center">
+                            {!selectedAgentId && <Check className="h-4 w-4" />}
+                          </div>
+                          <span>Default (No Agent)</span>
+                        </div>
+                      </DropdownMenuItem>
+                      {agents.length > 0 && <DropdownMenuSeparator />}
+                      {agents.length === 0 ? (
+                        <div className="p-2 text-xs text-center text-muted-foreground">
+                          No custom agents created yet.
+                        </div>
+                      ) : (
+                        agents.map((agent) => (
+                          <DropdownMenuItem
+                            key={agent.id}
+                            onClick={() => {
+                              setSelectedAgentId(agent.id);
+                              if (agent) {
+                                setProvider(agent.provider);
+                                setModel(agent.modelName);
+                                setSelectedTools(agent.tools || []);
+                              }
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 flex items-center justify-center">
+                                {selectedAgentId === agent.id && (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </div>
+                              <span>{agent.name}</span>
+                            </div>
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -428,11 +529,45 @@ export const MessageInput = ({
                     size="sm"
                     className="flex h-8 items-center gap-2 rounded-full px-2 sm:px-3 text-muted-foreground hover:bg-secondary hover:text-foreground"
                   >
-                    <Wrench className="h-4 w-4" />
+                    {isLoadingTools ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : toolsError ? (
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    ) : (
+                      <Wrench className="h-4 w-4" />
+                    )}
                     <span className="text-xs hidden sm:inline">
-                      {selectedAgentId || disableAgentSelection
-                        ? `${selectedTools.length} Tools (Locked)`
-                        : `${selectedTools.length} Tools`}
+                      {isLoadingTools
+                        ? "Loading..."
+                        : toolsError
+                          ? "Error"
+                          : (() => {
+                              // Total available tools count
+                              const totalToolsCount =
+                                mcpToolsData?.totalCount || 0;
+
+                              // Scenario 3: Chat started - show locked state
+                              if (disableAgentSelection) {
+                                // Scenario 2+3: Agent selected + chat started
+                                if (selectedAgentId) {
+                                  return `${selectedTools.length} Tools (Agent)`;
+                                }
+                                // Scenario 1+3: Default agent + chat started
+                                return selectedTools.length > 0
+                                  ? `${selectedTools.length}/${totalToolsCount} Tools`
+                                  : `${totalToolsCount} Tools`;
+                              }
+
+                              // Scenario 2: Agent selected (before chat)
+                              if (selectedAgentId) {
+                                return `${selectedTools.length} Tools (Agent)`;
+                              }
+
+                              // Scenario 1: Default agent - user can select tools
+                              return selectedTools.length > 0
+                                ? `${selectedTools.length}/${totalToolsCount} Tools`
+                                : `${totalToolsCount} Tools`;
+                            })()}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -441,47 +576,107 @@ export const MessageInput = ({
                   className="w-[280px] max-h-[300px] overflow-y-auto"
                 >
                   <DropdownMenuLabel>
-                    Tools {selectedAgentId && "(Configured by Agent)"}
+                    {selectedAgentId
+                      ? `Tools (${agents.find((a) => a.id === selectedAgentId)?.name || "Agent"})`
+                      : disableAgentSelection
+                        ? "Tools (Locked after chat start)"
+                        : "Select Tools"}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {mcpToolsData &&
-                    Object.entries(mcpToolsData.serverGroups).map(
-                      ([serverName, group]) => (
-                        <div key={serverName}>
-                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
-                            {serverName}
-                          </div>
-                          {group.tools.map((tool) => {
-                            const fullToolName = `${serverName}__${tool.name}`;
-                            return (
-                              <DropdownMenuItem
-                                key={fullToolName}
-                                onSelect={(e) => {
-                                  e.preventDefault();
-                                  handleToolToggle(fullToolName);
-                                }}
-                                disabled={
-                                  !!selectedAgentId || disableAgentSelection
-                                }
-                              >
-                                <div className="flex items-center gap-2 w-full">
-                                  <div className="w-4 h-4 flex items-center justify-center">
-                                    {selectedTools.includes(fullToolName) && (
-                                      <Check className="h-4 w-4" />
-                                    )}
-                                  </div>
-                                  <span className="truncate">{tool.name}</span>
-                                </div>
-                              </DropdownMenuItem>
-                            );
-                          })}
-                        </div>
-                      ),
-                    )}
-                  {!mcpToolsData && (
-                    <div className="p-2 text-xs text-center text-muted-foreground">
-                      Loading tools...
+
+                  {/* Loading State */}
+                  {isLoadingTools && (
+                    <div className="p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          Loading tools from MCP servers...
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="h-5 w-1/3 animate-pulse rounded bg-muted/70" />
+                        <div className="h-6 w-full animate-pulse rounded bg-muted" />
+                        <div className="h-6 w-full animate-pulse rounded bg-muted" />
+                        <div className="h-5 w-1/3 animate-pulse rounded bg-muted/70 mt-2" />
+                        <div className="h-6 w-full animate-pulse rounded bg-muted" />
+                      </div>
                     </div>
+                  )}
+
+                  {/* Error State */}
+                  {toolsError && !isLoadingTools && (
+                    <div className="p-3 text-center">
+                      <AlertCircle className="h-5 w-5 mx-auto text-destructive mb-2" />
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Failed to load MCP tools
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          refetchTools();
+                        }}
+                        className="h-7 text-xs"
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Retry
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Loaded State */}
+                  {!isLoadingTools && !toolsError && mcpToolsData && (
+                    <>
+                      {Object.keys(mcpToolsData.serverGroups).length === 0 ? (
+                        <div className="p-2 text-xs text-center text-muted-foreground">
+                          No MCP tools available. Add an MCP server in settings.
+                        </div>
+                      ) : (
+                        Object.entries(mcpToolsData.serverGroups).map(
+                          ([serverName, group]) => (
+                            <div key={serverName}>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 flex items-center justify-between">
+                                <span>{serverName}</span>
+                                <span className="text-[10px] font-normal">
+                                  {group.count} tools
+                                </span>
+                              </div>
+                              {group.tools.map((tool) => {
+                                const fullToolName = `${serverName}__${tool.name}`;
+                                return (
+                                  <DropdownMenuItem
+                                    key={fullToolName}
+                                    onSelect={(e) => {
+                                      e.preventDefault();
+                                      handleToolToggle(fullToolName);
+                                    }}
+                                    disabled={
+                                      !!selectedAgentId || disableAgentSelection
+                                    }
+                                  >
+                                    <div className="flex items-center gap-2 w-full">
+                                      <div className="w-4 h-4 flex items-center justify-center">
+                                        {selectedTools.includes(
+                                          fullToolName,
+                                        ) && <Check className="h-4 w-4" />}
+                                      </div>
+                                      <span
+                                        className="truncate"
+                                        title={tool.description}
+                                      >
+                                        {tool.name}
+                                      </span>
+                                    </div>
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                            </div>
+                          ),
+                        )
+                      )}
+                    </>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
