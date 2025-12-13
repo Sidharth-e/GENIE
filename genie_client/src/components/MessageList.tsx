@@ -107,7 +107,11 @@ const groupToolMessagesWithNextAI = (messages: MessageResponse[]) => {
       groups.set(aiMessageId, [...chartToolMessages]);
 
       // Mark these as consumed
-      chartToolMessages.forEach((m) => consumedIds.add(getMessageId(m)));
+      chartToolMessages.forEach((m) => {
+        const id = getMessageId(m);
+        consumedIds.add(id);
+        // console.log(`[MessageList] Consumed tool message ${id} by AI ${aiMessageId}`);
+      });
 
       chartToolMessages.length = 0; // Clear the array
     }
@@ -122,6 +126,7 @@ const MessageList = ({
   approveToolExecution,
   isLoading,
 }: MessageListProps) => {
+  // ... existing refs and state ...
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [feedbackMap, setFeedbackMap] = useState<
     Record<string, "like" | "dislike">
@@ -197,17 +202,15 @@ const MessageList = ({
         } else if (message.type === "tool") {
           // Skip rendering chart/visual tool messages IF they are already grouped with an AI message
           // If they are not grouped (e.g. pending next AI message), render them as tool message
-          if (
-            (isChartToolMessage(message) ||
-              isQRCodeToolMessage(message) ||
-              isMermaidToolMessage(message) ||
-              isStatsToolMessage(message)) &&
-            consumedToolMessageIds.has(getMessageId(message))
-          ) {
-            return null;
-          }
+          const isConsumed = consumedToolMessageIds.has(getMessageId(message));
 
-          return <ToolMessage key={getMessageId(message)} message={message} />;
+          return (
+            <ToolMessage
+              key={getMessageId(message)}
+              message={message}
+              isConsumed={isConsumed}
+            />
+          );
         } else if (message.type === "error") {
           return <ErrorMessage key={getMessageId(message)} message={message} />;
         }

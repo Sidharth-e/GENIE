@@ -58,6 +58,7 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ data }) => {
           startOnLoad: false,
           theme: "default",
           securityLevel: "loose",
+          suppressErrorRendering: true,
         });
 
         // Generate a unique ID for the diagram
@@ -69,7 +70,11 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ data }) => {
         setError(null);
       } catch (err) {
         console.error("Mermaid rendering failed:", err);
-        setError("Failed to render diagram. Please check the syntax.");
+        setError(
+          err instanceof Error
+            ? `Failed to render diagram: ${err.message}`
+            : "Failed to render diagram. Please check the syntax.",
+        );
       }
     };
 

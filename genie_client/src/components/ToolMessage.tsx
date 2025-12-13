@@ -14,6 +14,7 @@ import { StatsRenderer, parseStatsData } from "./StatsRenderer";
 
 interface ToolMessageProps {
   message: MessageResponse;
+  isConsumed?: boolean;
 }
 
 type ContentType = "json" | "markdown" | "text";
@@ -128,7 +129,10 @@ const getContentAsString = (
   return JSON.stringify(content, null, 2);
 };
 
-export const ToolMessage = ({ message }: ToolMessageProps) => {
+export const ToolMessage = ({
+  message,
+  isConsumed = false,
+}: ToolMessageProps) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const toolName = getToolName(message);
@@ -204,24 +208,28 @@ export const ToolMessage = ({ message }: ToolMessageProps) => {
 
       {!open && content && (
         <div className="px-4 pb-3">
-          {isChart && chartData ? (
-            <div className="mt-2">
-              <ChartRenderer data={chartData} />
-            </div>
-          ) : isQRCode && qrData ? (
-            <div className="mt-2 text-center">
-              <QRCodeRenderer data={qrData} />
-            </div>
-          ) : isMermaid && mermaidData ? (
-            <div className="mt-2">
-              <MermaidRenderer data={mermaidData} />
-            </div>
-          ) : isStats && statsData ? (
-            <div className="mt-2">
-              <StatsRenderer data={statsData} />
-            </div>
+          {!isConsumed ? (
+            isChart && chartData ? (
+              <div className="mt-2">
+                <ChartRenderer data={chartData} />
+              </div>
+            ) : isQRCode && qrData ? (
+              <div className="mt-2 text-center">
+                <QRCodeRenderer data={qrData} />
+              </div>
+            ) : isMermaid && mermaidData ? (
+              <div className="mt-2">
+                <MermaidRenderer data={mermaidData} />
+              </div>
+            ) : isStats && statsData ? (
+              <div className="mt-2">
+                <StatsRenderer data={statsData} />
+              </div>
+            ) : (
+              formatContent(content, contentType, true)
+            )
           ) : (
-            formatContent(content, contentType, true)
+            <div className="text-sm text-gray-500 italic">View details...</div>
           )}
         </div>
       )}
