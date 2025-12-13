@@ -5,7 +5,6 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { MCPServerList } from "./MCPServerList";
 import { AgentList } from "./AgentList";
-import { useThreads } from "@/hooks/useThreads";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -15,7 +14,6 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [showMCPConfig, setShowMCPConfig] = useState(false);
   const [showAgentList, setShowAgentList] = useState(false);
-  const { createThread } = useThreads();
   const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
   const openMCPConfig = useCallback(() => setShowMCPConfig(true), []);
   const closeMCPConfig = useCallback(() => setShowMCPConfig(false), []);
@@ -34,7 +32,6 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className="z-10">
           <Header
             toggleSidebar={toggleSidebar}
-            onCreateThread={createThread}
             onOpenMCPConfig={openMCPConfig}
             onOpenAgentList={openAgentList}
           />

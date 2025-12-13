@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   PanelLeftClose,
   Settings,
@@ -8,7 +8,6 @@ import {
   LogOut,
   User,
   SquarePen,
-  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,29 +26,20 @@ import { config } from "@/constants/config";
 
 interface HeaderProps {
   toggleSidebar: () => void;
-  onCreateThread: () => Promise<{ id: string }>;
   onOpenMCPConfig: () => void;
   onOpenAgentList: () => void;
 }
 
 export const Header = ({
   toggleSidebar,
-  onCreateThread,
   onOpenMCPConfig,
   onOpenAgentList,
 }: HeaderProps) => {
-  const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
 
-  const handleCreateThread = async () => {
-    setIsCreating(true);
-    try {
-      const newThread = await onCreateThread();
-      router.push(`/thread/${newThread.id}`);
-    } finally {
-      setIsCreating(false);
-    }
+  const handleNewChat = () => {
+    router.push("/");
   };
 
   return (
@@ -76,17 +66,12 @@ export const Header = ({
         {/* Right side buttons */}
         <div className="flex items-center gap-2">
           <Button
-            onClick={handleCreateThread}
-            disabled={isCreating}
+            onClick={handleNewChat}
             variant="default"
             size="sm"
             className="h-8 gap-2 px-3 text-xs"
           >
-            {isCreating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <SquarePen className="h-4 w-4" />
-            )}
+            <SquarePen className="h-4 w-4" />
             <span className="hidden sm:inline">New Chat</span>
           </Button>
 
