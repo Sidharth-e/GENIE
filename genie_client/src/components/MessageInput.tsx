@@ -6,10 +6,6 @@ import {
   Paperclip,
   Bot,
   Wrench,
-  BrainCog,
-  Server,
-  Eye,
-  EyeOff,
   Check,
   Mic,
   MicOff,
@@ -17,13 +13,12 @@ import {
   Save,
   FileText,
   X,
-  Trash2,
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
 import { uploadFile, deleteFile, UploadedFile } from "@/services/fileService";
 import { MessageOptions } from "@/types/message";
-import { useUISettings } from "@/contexts/UISettingsContext";
+
 import { useMCPTools } from "@/hooks/useMCPTools";
 import { useAgents } from "@/hooks/useAgents";
 import { PromptSaveDialog } from "./PromptSaveDialog";
@@ -273,11 +268,6 @@ export const MessageInput = ({
     }
   }, [selectedAgentId, agents]);
 
-  const [approveAllTools, setApproveAllTools] = useState<boolean>(false);
-
-  // UI settings for toggling tool messages
-  const { hideToolMessages, toggleToolMessages } = useUISettings();
-
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea based on content
@@ -302,7 +292,6 @@ export const MessageInput = ({
       model,
       provider,
       tools: selectedAgentId ? undefined : selectedTools,
-      approveAllTools: approveAllTools,
       agentId: selectedAgentId,
       documentIds: uploadedFiles.map((f) => f.documentId),
     });
@@ -845,33 +834,8 @@ export const MessageInput = ({
           </div>
         </div>
 
-        {/* Footer Controls */}
-        <div className="flex items-center justify-between px-4 text-xs">
-          <div className="flex items-center gap-4 text-muted-foreground">
-            <label className="flex cursor-pointer items-center gap-1.5 hover:text-foreground transition-colors">
-              <input
-                type="checkbox"
-                checked={approveAllTools}
-                onChange={(e) => setApproveAllTools(e.target.checked)}
-                className="h-3.5 w-3.5 cursor-pointer rounded border-gray-300 text-primary focus:ring-1 focus:ring-primary"
-              />
-              <span>Auto-approve tools</span>
-            </label>
-
-            <button
-              type="button"
-              onClick={toggleToolMessages}
-              className="flex cursor-pointer items-center gap-1.5 hover:text-foreground transition-colors"
-            >
-              {hideToolMessages ? (
-                <EyeOff className="h-3.5 w-3.5" />
-              ) : (
-                <Eye className="h-3.5 w-3.5" />
-              )}
-              <span>{hideToolMessages ? "Show tools" : "Hide tools"}</span>
-            </button>
-          </div>
-
+        {/* Footer */}
+        <div className="flex items-center justify-end px-4 text-xs">
           <div className="text-[10px] text-muted-foreground/50 hidden sm:block">
             Genie can make mistakes. Check important info.
           </div>

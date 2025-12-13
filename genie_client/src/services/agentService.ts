@@ -113,7 +113,6 @@ export async function streamResponse(params: {
     model: string | undefined;
     provider: string | undefined;
     allowedTools: string[] | undefined;
-    approveAllTools: boolean | undefined;
     systemPrompt: string | undefined;
     subAgentIds?: string[];
     recursionLimit?: number;
@@ -122,7 +121,6 @@ export async function streamResponse(params: {
     provider: opts?.provider,
     // tools: opts?.tools, // opts.tools are strings, so we map to allowedTools
     allowedTools: opts?.tools,
-    approveAllTools: opts?.approveAllTools,
     systemPrompt: undefined as string | undefined,
   };
 

@@ -9,8 +9,6 @@ interface ModelConfigurationProps {
   setProvider: (provider: string) => void;
   model: string;
   setModel: (model: string) => void;
-  approveAllTools?: boolean;
-  setApproveAllTools?: (approveAllTools: boolean) => void;
 }
 
 export const ModelConfiguration = ({

@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   if (!session || !session.user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
   }
 
@@ -32,18 +32,20 @@ export async function GET(req: NextRequest) {
   const provider = searchParams.get("provider") || undefined;
   const allowTool = searchParams.get("allowTool") as "allow" | "deny" | null;
   const toolsParam = searchParams.get("tools") || "";
-  const approveAllTools = searchParams.get("approveAllTools") === "true";
   const agentId = searchParams.get("agentId") || undefined;
   const tools = toolsParam
     ? toolsParam
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean)
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
     : undefined;
 
   const documentIdsParam = searchParams.get("documentIds") || "";
   const documentIds = documentIdsParam
-    ? documentIdsParam.split(",").map((id) => id.trim()).filter(Boolean)
+    ? documentIdsParam
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean)
     : undefined;
 
   const userInfo = {
@@ -68,7 +70,14 @@ export async function GET(req: NextRequest) {
           const iterable = await streamResponse({
             threadId,
             userText: userContent,
-            opts: { model, provider, tools, allowTool: allowTool || undefined, approveAllTools, agentId, documentIds },
+            opts: {
+              model,
+              provider,
+              tools,
+              allowTool: allowTool || undefined,
+              agentId,
+              documentIds,
+            },
             userInfo,
           });
           for await (const chunk of iterable) {
@@ -84,10 +93,18 @@ export async function GET(req: NextRequest) {
           if (fullAiResponse && threadId && threadId !== "unknown") {
             try {
               console.log("Attempting to generate title for thread:", threadId);
-              const newTitle = await generateAndSaveTitle(threadId, userContent, fullAiResponse);
+              const newTitle = await generateAndSaveTitle(
+                threadId,
+                userContent,
+                fullAiResponse,
+              );
               if (newTitle) {
                 console.log("Title generated:", newTitle);
-                controller.enqueue(encoder.encode(`event: title_generated\ndata: ${JSON.stringify({ title: newTitle })}\n\n`));
+                controller.enqueue(
+                  encoder.encode(
+                    `event: title_generated\ndata: ${JSON.stringify({ title: newTitle })}\n\n`,
+                  ),
+                );
               } else {
                 console.log("No title generated (returned null/empty)");
               }
@@ -95,7 +112,10 @@ export async function GET(req: NextRequest) {
               console.error("Title generation failed:", e);
             }
           } else {
-             console.log("Skipping title generation:", { hasResponse: !!fullAiResponse, threadId });
+            console.log("Skipping title generation:", {
+              hasResponse: !!fullAiResponse,
+              threadId,
+            });
           }
 
           // Signal completion

@@ -14,7 +14,6 @@ import {
 } from "@/services/messageUtils";
 import { submitFeedback, deleteFeedback } from "@/services/chatService";
 import { ToolCallDisplay } from "./ToolCallDisplay";
-import { useUISettings } from "@/contexts/UISettingsContext";
 import MDEditor from "@uiw/react-md-editor";
 import { ChartRenderer, parseChartData, type ChartData } from "./ChartRenderer";
 
@@ -65,8 +64,6 @@ export const AIMessage = ({
   const messageContent = getMessageContent(message);
   const hasTools = hasToolCalls(message);
   const toolCalls = getToolCalls(message);
-  const { hideToolMessages } = useUISettings();
-
   // State for action buttons
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<"like" | "dislike" | null>(
@@ -83,7 +80,7 @@ export const AIMessage = ({
   const hasCharts = charts.length > 0;
 
   // If tool messages are hidden and there's no text content, don't render anything
-  const shouldShowTools = hasTools && !hideToolMessages;
+  const shouldShowTools = hasTools;
   const hasVisibleContent = messageContent || shouldShowTools || hasCharts;
 
   // Copy message content to clipboard

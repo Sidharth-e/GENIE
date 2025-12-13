@@ -33,7 +33,6 @@ export interface AgentConfigOptions {
   systemPrompt?: string; // system prompt override
   tools?: unknown[]; // tools from registry or direct tool objects
   allowedTools?: string[]; // names of tools to allow from MCP
-  approveAllTools?: boolean; // if true, skip tool approval prompts
   subAgentIds?: string[]; // IDs of sub-agents for multi-agent mode
   recursionLimit?: number; // Max iterations for multi-agent supervisor (default: 25)
 }

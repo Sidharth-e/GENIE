@@ -55,8 +55,6 @@ export function createMessageStream(
   if (opts?.provider) params.set("provider", opts.provider);
   if (opts?.tools?.length) params.set("tools", opts.tools.join(","));
   if (opts?.allowTool) params.set("allowTool", opts.allowTool);
-  if (opts?.approveAllTools !== undefined)
-    params.set("approveAllTools", opts.approveAllTools ? "true" : "false");
   if (opts?.agentId) params.set("agentId", opts.agentId);
   if (opts?.documentIds?.length)
     params.set("documentIds", opts.documentIds.join(","));

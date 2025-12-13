@@ -7,7 +7,6 @@ import { useEffect, useRef, useMemo, useState } from "react";
 import { getMessageId } from "@/services/messageUtils";
 import { fetchFeedback } from "@/services/chatService";
 import dynamic from "next/dynamic";
-import { useUISettings } from "@/contexts/UISettingsContext";
 import { parseChartData } from "./ChartRenderer";
 
 const ToolMessage = dynamic(
@@ -76,7 +75,6 @@ const MessageList = ({
   isLoading,
 }: MessageListProps) => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const { hideToolMessages } = useUISettings();
   const [feedbackMap, setFeedbackMap] = useState<
     Record<string, "like" | "dislike">
   >({});
@@ -147,7 +145,7 @@ const MessageList = ({
               toolMessages={toolMessages}
             />
           );
-        } else if (message.type === "tool" && !hideToolMessages) {
+        } else if (message.type === "tool") {
           // Skip rendering chart tool messages separately (they're rendered inline with AI)
           if (isChartToolMessage(message)) {
             return null;

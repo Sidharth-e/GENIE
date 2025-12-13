@@ -11,7 +11,6 @@ export interface MessageOptions {
   tools?: string[];
   documentIds?: string[];
   allowTool?: "allow" | "deny";
-  approveAllTools?: boolean; // if true, skip tool approval prompts
   agentId?: string;
   provider?: string;
 }
