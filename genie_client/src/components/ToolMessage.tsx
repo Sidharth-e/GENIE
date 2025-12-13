@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import type { MessageResponse } from "@/types/message";
-import { ChevronDownIcon, ChevronRightIcon, CopyIcon, CheckIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  CheckIcon,
+} from "lucide-react";
 import { getToolName } from "@/services/messageUtils";
+import { ChartRenderer, parseChartData } from "./ChartRenderer";
 
 interface ToolMessageProps {
   message: MessageResponse;
@@ -26,7 +32,10 @@ const detectContentType = (content: string): ContentType => {
   }
 };
 
-const getContentPreview = (content: string, maxLength: number = 100): string => {
+const getContentPreview = (
+  content: string,
+  maxLength: number = 100,
+): string => {
   if (content.length <= maxLength) return content;
   return content.slice(0, maxLength) + "...";
 };
@@ -40,9 +49,17 @@ const getContentStats = (content: string): string => {
   return `${chars} chars`;
 };
 
-const formatContent = (content: string, contentType: ContentType, isPreview: boolean = false) => {
+const formatContent = (
+  content: string,
+  contentType: ContentType,
+  isPreview: boolean = false,
+) => {
   if (isPreview) {
-    return <div className="text-sm text-gray-600 italic">{getContentPreview(content, 150)}</div>;
+    return (
+      <div className="text-sm text-gray-600 italic">
+        {getContentPreview(content, 150)}
+      </div>
+    );
   }
 
   // For very short content, don't use ScrollArea
@@ -73,7 +90,11 @@ const formatContent = (content: string, contentType: ContentType, isPreview: boo
         );
       case "text":
       default:
-        return <div className="rounded bg-gray-100 p-3 text-sm whitespace-pre-wrap">{content}</div>;
+        return (
+          <div className="rounded bg-gray-100 p-3 text-sm whitespace-pre-wrap">
+            {content}
+          </div>
+        );
     }
   })();
 
@@ -112,6 +133,10 @@ export const ToolMessage = ({ message }: ToolMessageProps) => {
   const content = getContentAsString(message.data?.content);
   const contentType = detectContentType(content);
   const contentStats = getContentStats(content);
+
+  // Check if content is chart data
+  const chartData = parseChartData(content);
+  const isChart = chartData !== null;
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -163,21 +188,43 @@ export const ToolMessage = ({ message }: ToolMessageProps) => {
       </div>
 
       {!open && content && (
-        <div className="px-4 pb-3">{formatContent(content, contentType, true)}</div>
+        <div className="px-4 pb-3">
+          {isChart ? (
+            <div className="text-sm text-blue-600 font-medium">
+              📊 Click to view interactive {chartData?.chartType} chart
+            </div>
+          ) : (
+            formatContent(content, contentType, true)
+          )}
+        </div>
       )}
 
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-          }`}
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          open ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
+        }`}
       >
         {open && (
           <div className="border-t border-gray-200 p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-medium tracking-wide text-gray-600 uppercase">
-                {contentType.toUpperCase()} Output
-              </span>
-            </div>
-            {formatContent(content, contentType)}
+            {isChart && chartData ? (
+              <>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium tracking-wide text-gray-600 uppercase">
+                    📊 Interactive Chart
+                  </span>
+                </div>
+                <ChartRenderer data={chartData} />
+              </>
+            ) : (
+              <>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium tracking-wide text-gray-600 uppercase">
+                    {contentType.toUpperCase()} Output
+                  </span>
+                </div>
+                {formatContent(content, contentType)}
+              </>
+            )}
           </div>
         )}
       </div>

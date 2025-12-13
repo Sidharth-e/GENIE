@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 from app import mcp
 
 # Import all tool modules to register them with the server
-from app.tools import analytics, finance, data  # noqa: F401
+from app.tools import analytics, finance, data, visualization  # noqa: F401
 
 logger.info("GENIE MCP Server initialized")
 logger.info(f"Registered tools: calculate_metrics, analyze_sentiment_keyword, get_stock_price, get_userData")
