@@ -9,6 +9,8 @@ import {
 import { getToolName } from "@/services/messageUtils";
 import { ChartRenderer, parseChartData } from "./ChartRenderer";
 import { QRCodeRenderer, parseQRCodeData } from "./QRCodeRenderer";
+import { MermaidRenderer, parseMermaidData } from "./MermaidRenderer";
+import { StatsRenderer, parseStatsData } from "./StatsRenderer";
 
 interface ToolMessageProps {
   message: MessageResponse;
@@ -143,6 +145,14 @@ export const ToolMessage = ({ message }: ToolMessageProps) => {
   const qrData = parseQRCodeData(content);
   const isQRCode = qrData !== null;
 
+  // Check if content is Mermaid data
+  const mermaidData = parseMermaidData(content);
+  const isMermaid = mermaidData !== null;
+
+  // Check if content is Stats data
+  const statsData = parseStatsData(content);
+  const isStats = statsData !== null;
+
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -194,13 +204,21 @@ export const ToolMessage = ({ message }: ToolMessageProps) => {
 
       {!open && content && (
         <div className="px-4 pb-3">
-          {isChart ? (
-            <div className="text-sm text-blue-600 font-medium">
-              📊 Chart Data (JSON)
+          {isChart && chartData ? (
+            <div className="mt-2">
+              <ChartRenderer data={chartData} />
             </div>
-          ) : isQRCode ? (
-            <div className="text-sm text-blue-600 font-medium">
-              📱 QR Code Data (JSON)
+          ) : isQRCode && qrData ? (
+            <div className="mt-2 text-center">
+              <QRCodeRenderer data={qrData} />
+            </div>
+          ) : isMermaid && mermaidData ? (
+            <div className="mt-2">
+              <MermaidRenderer data={mermaidData} />
+            </div>
+          ) : isStats && statsData ? (
+            <div className="mt-2">
+              <StatsRenderer data={statsData} />
             </div>
           ) : (
             formatContent(content, contentType, true)

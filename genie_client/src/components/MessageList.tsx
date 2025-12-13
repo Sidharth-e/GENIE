@@ -81,6 +81,7 @@ const isStatsToolMessage = (message: MessageResponse): boolean => {
 // Group tool messages with the NEXT AI message that follows them
 // This way the chart appears in the summary message, not the tool-calling message
 const groupToolMessagesWithNextAI = (messages: MessageResponse[]) => {
+  const consumedIds = new Set<string>();
   const groups: Map<string, MessageResponse[]> = new Map();
 
   // Collect all chart tool messages
@@ -104,11 +105,15 @@ const groupToolMessagesWithNextAI = (messages: MessageResponse[]) => {
     if (msg.type === "ai" && chartToolMessages.length > 0) {
       const aiMessageId = getMessageId(msg);
       groups.set(aiMessageId, [...chartToolMessages]);
+
+      // Mark these as consumed
+      chartToolMessages.forEach((m) => consumedIds.add(getMessageId(m)));
+
       chartToolMessages.length = 0; // Clear the array
     }
   }
 
-  return groups;
+  return { groups, consumedIds };
 };
 
 const MessageList = ({
@@ -156,10 +161,11 @@ const MessageList = ({
   }, []);
 
   // Group chart tool messages with the NEXT AI message that follows them
-  const toolMessageGroups = useMemo(
-    () => groupToolMessagesWithNextAI(uniqueMessages),
-    [uniqueMessages],
-  );
+  const { groups: toolMessageGroups, consumedIds: consumedToolMessageIds } =
+    useMemo(
+      () => groupToolMessagesWithNextAI(uniqueMessages),
+      [uniqueMessages],
+    );
 
   const shouldShowLoading =
     isLoading &&
@@ -189,12 +195,14 @@ const MessageList = ({
             />
           );
         } else if (message.type === "tool") {
-          // Skip rendering chart/visual tool messages separately (they're rendered inline with AI)
+          // Skip rendering chart/visual tool messages IF they are already grouped with an AI message
+          // If they are not grouped (e.g. pending next AI message), render them as tool message
           if (
-            isChartToolMessage(message) ||
-            isQRCodeToolMessage(message) ||
-            isMermaidToolMessage(message) ||
-            isStatsToolMessage(message)
+            (isChartToolMessage(message) ||
+              isQRCodeToolMessage(message) ||
+              isMermaidToolMessage(message) ||
+              isStatsToolMessage(message)) &&
+            consumedToolMessageIds.has(getMessageId(message))
           ) {
             return null;
           }
