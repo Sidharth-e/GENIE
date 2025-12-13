@@ -8,6 +8,7 @@ import { getMessageId } from "@/services/messageUtils";
 import { fetchFeedback } from "@/services/chatService";
 import dynamic from "next/dynamic";
 import { parseChartData } from "./ChartRenderer";
+import { parseQRCodeData } from "./QRCodeRenderer";
 
 const ToolMessage = dynamic(
   () => import("./ToolMessage").then((m) => m.ToolMessage),
@@ -42,6 +43,17 @@ const isChartToolMessage = (message: MessageResponse): boolean => {
   return chartData !== null;
 };
 
+// Helper function to check if tool message contains QR code data
+const isQRCodeToolMessage = (message: MessageResponse): boolean => {
+  if (message.type !== "tool") return false;
+  const content = message.data?.content;
+  if (!content) return false;
+  const contentStr =
+    typeof content === "string" ? content : JSON.stringify(content);
+  const qrData = parseQRCodeData(contentStr);
+  return qrData !== null;
+};
+
 // Group tool messages with the NEXT AI message that follows them
 // This way the chart appears in the summary message, not the tool-calling message
 const groupToolMessagesWithNextAI = (messages: MessageResponse[]) => {
@@ -53,8 +65,10 @@ const groupToolMessagesWithNextAI = (messages: MessageResponse[]) => {
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
 
-    if (msg.type === "tool" && isChartToolMessage(msg)) {
-      chartToolMessages.push(msg);
+    if (msg.type === "tool") {
+      if (isChartToolMessage(msg) || isQRCodeToolMessage(msg)) {
+        chartToolMessages.push(msg);
+      }
     }
 
     // When we find an AI message, assign any pending chart tool messages to it
@@ -147,7 +161,7 @@ const MessageList = ({
           );
         } else if (message.type === "tool") {
           // Skip rendering chart tool messages separately (they're rendered inline with AI)
-          if (isChartToolMessage(message)) {
+          if (isChartToolMessage(message) || isQRCodeToolMessage(message)) {
             return null;
           }
           return <ToolMessage key={getMessageId(message)} message={message} />;

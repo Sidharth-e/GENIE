@@ -16,6 +16,11 @@ import { submitFeedback, deleteFeedback } from "@/services/chatService";
 import { ToolCallDisplay } from "./ToolCallDisplay";
 import MDEditor from "@uiw/react-md-editor";
 import { ChartRenderer, parseChartData, type ChartData } from "./ChartRenderer";
+import {
+  QRCodeRenderer,
+  parseQRCodeData,
+  type QRCodeData,
+} from "./QRCodeRenderer";
 
 interface AIMessageProps {
   message: MessageResponse;
@@ -53,6 +58,23 @@ const extractChartsFromToolMessages = (
   return charts;
 };
 
+// Extract QR codes from tool messages
+const extractQRCodesFromToolMessages = (
+  toolMessages?: MessageResponse[],
+): QRCodeData[] => {
+  if (!toolMessages) return [];
+
+  const qrCodes: QRCodeData[] = [];
+  for (const msg of toolMessages) {
+    const content = getContentAsString(msg.data?.content);
+    const qrData = parseQRCodeData(content);
+    if (qrData) {
+      qrCodes.push(qrData);
+    }
+  }
+  return qrCodes;
+};
+
 export const AIMessage = ({
   message,
   threadId,
@@ -77,11 +99,15 @@ export const AIMessage = ({
 
   // Extract charts from tool messages to render inline
   const charts = extractChartsFromToolMessages(toolMessages);
+
   const hasCharts = charts.length > 0;
+  const qrCodes = extractQRCodesFromToolMessages(toolMessages);
+  const hasQRCodes = qrCodes.length > 0;
 
   // If tool messages are hidden and there's no text content, don't render anything
   const shouldShowTools = hasTools;
-  const hasVisibleContent = messageContent || shouldShowTools || hasCharts;
+  const hasVisibleContent =
+    messageContent || shouldShowTools || hasCharts || hasQRCodes;
 
   // Copy message content to clipboard
   const handleCopy = async () => {
@@ -122,7 +148,7 @@ export const AIMessage = ({
         <Bot className="text-primary h-5 w-5" />
       </div>
       <div className="max-w-[80%] space-y-3">
-        {(messageContent || hasCharts) && (
+        {(messageContent || hasCharts || hasQRCodes) && (
           <div
             className={cn(
               "rounded-2xl px-4 py-2",
@@ -154,6 +180,20 @@ export const AIMessage = ({
               <div className={cn("space-y-3", messageContent && "mt-4")}>
                 {charts.map((chart, index) => (
                   <ChartRenderer key={index} data={chart} />
+                ))}
+              </div>
+            )}
+
+            {/* Render QR codes INSIDE the message bubble */}
+            {hasQRCodes && (
+              <div
+                className={cn(
+                  "space-y-3",
+                  (messageContent || hasCharts) && "mt-4",
+                )}
+              >
+                {qrCodes.map((qr, index) => (
+                  <QRCodeRenderer key={index} data={qr} />
                 ))}
               </div>
             )}
