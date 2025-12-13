@@ -1,8 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Agent } from "@/types/agent";
-import { Loader2, Server, Wrench, Users, Bot } from "lucide-react";
+import {
+  Loader2,
+  Server,
+  Wrench,
+  Users,
+  Bot,
+  Search,
+  Check,
+  Sparkles,
+} from "lucide-react";
 import { useMCPTools } from "@/hooks/useMCPTools";
 import { useAgents } from "@/hooks/useAgents";
 import { PROVIDER_CONFIG } from "@/constants/providers";
@@ -43,6 +52,11 @@ export const AgentForm = ({
   const [recursionLimit, setRecursionLimit] = useState<number>(
     initialData?.recursionLimit || 25,
   );
+
+  // Search states
+  const [toolSearch, setToolSearch] = useState("");
+  const [agentSearch, setAgentSearch] = useState("");
+
   const { data: mcpToolsData } = useMCPTools();
   const { data: agents = [], isLoading: agentsLoading } = useAgents();
 
@@ -50,6 +64,40 @@ export const AgentForm = ({
   const availableSubAgents = agents.filter(
     (agent) => agent.id !== initialData?.id,
   );
+
+  // Filter tools based on search
+  const filteredServerGroups = useMemo(() => {
+    if (!mcpToolsData?.serverGroups) return {};
+    if (!toolSearch.trim()) return mcpToolsData.serverGroups;
+
+    const searchLower = toolSearch.toLowerCase();
+    const filtered: typeof mcpToolsData.serverGroups = {};
+
+    for (const [serverName, group] of Object.entries(
+      mcpToolsData.serverGroups,
+    )) {
+      const matchingTools = group.tools.filter(
+        (tool) =>
+          tool.name.toLowerCase().includes(searchLower) ||
+          tool.description?.toLowerCase().includes(searchLower),
+      );
+      if (matchingTools.length > 0) {
+        filtered[serverName] = { ...group, tools: matchingTools };
+      }
+    }
+    return filtered;
+  }, [mcpToolsData?.serverGroups, toolSearch]);
+
+  // Filter sub-agents based on search
+  const filteredSubAgents = useMemo(() => {
+    if (!agentSearch.trim()) return availableSubAgents;
+    const searchLower = agentSearch.toLowerCase();
+    return availableSubAgents.filter(
+      (agent) =>
+        agent.name.toLowerCase().includes(searchLower) ||
+        agent.description?.toLowerCase().includes(searchLower),
+    );
+  }, [availableSubAgents, agentSearch]);
 
   const handleToolToggle = (fullToolName: string) => {
     setSelectedTools((prev) =>
@@ -81,35 +129,47 @@ export const AgentForm = ({
     });
   };
 
+  // Calculate total filtered tools
+  const totalFilteredTools = Object.values(filteredServerGroups).reduce(
+    (acc, group) => acc + group.tools.length,
+    0,
+  );
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Name
-        </label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-        />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Basic Info Section */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            Agent Name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            placeholder="e.g., Research Assistant"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            Description
+          </label>
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Brief description of what this agent does"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
       </div>
 
+      {/* System Prompt */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Description
-        </label>
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
           System Prompt
         </label>
         <textarea
@@ -117,13 +177,15 @@ export const AgentForm = ({
           onChange={(e) => setSystemPrompt(e.target.value)}
           required
           rows={4}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          placeholder="You are a helpful assistant that..."
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white resize-none"
         />
       </div>
 
+      {/* Provider & Model Grid */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
             Provider
           </label>
           <select
@@ -131,7 +193,6 @@ export const AgentForm = ({
             onChange={(e) => {
               const newProvider = e.target.value;
               setProvider(newProvider);
-              // Reset model to first available for this provider
               if (
                 PROVIDER_CONFIG[newProvider] &&
                 PROVIDER_CONFIG[newProvider].models.length > 0
@@ -139,7 +200,7 @@ export const AgentForm = ({
                 setModelName(PROVIDER_CONFIG[newProvider].models[0].id);
               }
             }}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
           >
             {Object.entries(PROVIDER_CONFIG).map(([key, config]) => (
               <option key={key} value={key}>
@@ -150,14 +211,14 @@ export const AgentForm = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
             Model
           </label>
           <select
             value={modelName}
             onChange={(e) => setModelName(e.target.value)}
             required
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
           >
             {PROVIDER_CONFIG[provider]?.models.map((model) => (
               <option key={model.id} value={model.id}>
@@ -168,57 +229,83 @@ export const AgentForm = ({
         </div>
       </div>
 
+      {/* Tools Section */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Allowed Tools
-        </label>
-        <div className="rounded-md border border-gray-300 p-4 dark:border-gray-600 dark:bg-gray-800">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <Wrench className="h-4 w-4" />
+            Allowed Tools
+            <span className="text-xs font-normal text-gray-500">
+              ({selectedTools.length} selected)
+            </span>
+          </label>
+        </div>
+
+        {/* Tool Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search tools..."
+            value={toolSearch}
+            onChange={(e) => setToolSearch(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-800/50 min-h-[240px]">
           {!mcpToolsData ? (
-            <div className="flex items-center justify-center py-4">
+            <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
             </div>
-          ) : mcpToolsData.totalCount === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              No tools available.
+          ) : totalFilteredTools === 0 ? (
+            <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+              {toolSearch
+                ? "No tools match your search."
+                : "No tools available."}
             </p>
           ) : (
-            <div className="space-y-4">
-              {Object.entries(mcpToolsData.serverGroups).map(
+            <div className="space-y-4 max-h-[240px] overflow-y-auto">
+              {Object.entries(filteredServerGroups).map(
                 ([serverName, group]) => (
-                  <div key={serverName} className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-                      <Server className="h-4 w-4 text-gray-500" />
-                      <span className="capitalize">{serverName}</span>
-                      <span className="text-xs text-gray-500">
-                        ({group.count})
+                  <div key={serverName}>
+                    <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                      <Server className="h-3.5 w-3.5" />
+                      <span>{serverName}</span>
+                      <span className="text-gray-400 font-normal">
+                        ({group.tools.length})
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {group.tools.map((tool) => {
                         const fullToolName = `${serverName}__${tool.name}`;
+                        const isSelected = selectedTools.includes(fullToolName);
                         return (
-                          <label
+                          <button
                             key={fullToolName}
-                            className="flex items-start gap-2 rounded p-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+                            type="button"
+                            onClick={() => handleToolToggle(fullToolName)}
+                            className={`group relative flex flex-col items-start rounded-lg border p-3 text-left text-sm transition-all ${
+                              isSelected
+                                ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:bg-blue-900/20 dark:border-blue-400"
+                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500"
+                            }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={selectedTools.includes(fullToolName)}
-                              onChange={() => handleToolToggle(fullToolName)}
-                              className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                            />
-                            <div className="text-sm">
-                              <div className="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-200">
-                                <Wrench className="h-3 w-3" />
-                                {tool.name}
+                            {isSelected && (
+                              <div className="absolute right-2 top-2 rounded-full bg-blue-500 p-0.5 text-white">
+                                <Check className="h-3 w-3" />
                               </div>
-                              {tool.description && (
-                                <p className="text-xs text-gray-500 line-clamp-2 dark:text-gray-400">
-                                  {tool.description}
-                                </p>
-                              )}
+                            )}
+                            <div className="flex items-center gap-1.5 font-medium text-gray-800 dark:text-gray-200">
+                              <Wrench className="h-3.5 w-3.5 text-gray-500" />
+                              <span className="truncate">{tool.name}</span>
                             </div>
-                          </label>
+                            {tool.description && (
+                              <p className="mt-1 text-xs text-gray-500 line-clamp-2 dark:text-gray-400">
+                                {tool.description}
+                              </p>
+                            )}
+                          </button>
                         );
                       })}
                     </div>
@@ -230,108 +317,128 @@ export const AgentForm = ({
         </div>
       </div>
 
-      {/* Sub-Agents Selection (Multi-Agent Mode) */}
+      {/* Sub-Agents Section */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          <span className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
             <Users className="h-4 w-4" />
-            Sub-Agents (Multi-Agent Mode)
-          </span>
-        </label>
+            Sub-Agents
+            <span className="text-xs font-normal text-gray-500">
+              (Multi-Agent Mode)
+            </span>
+          </label>
+        </div>
 
         {selectedSubAgents.length > 0 && (
-          <div className="flex items-center gap-2 rounded-lg bg-purple-50 p-3 text-sm text-purple-700 dark:bg-purple-900/20 dark:text-purple-300">
-            <Bot className="h-4 w-4" />
-            <span>
-              <strong>Supervisor Mode:</strong> This agent will delegate tasks
-              to {selectedSubAgents.length} sub-agent(s)
-            </span>
+          <div className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 p-3 text-sm dark:from-purple-900/20 dark:to-indigo-900/20">
+            <div className="rounded-full bg-purple-100 p-1.5 dark:bg-purple-800">
+              <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-300" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-purple-800 dark:text-purple-200">
+                Supervisor Mode Active
+              </p>
+              <p className="text-xs text-purple-600 dark:text-purple-400">
+                This agent will delegate tasks to {selectedSubAgents.length}{" "}
+                sub-agent(s)
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-purple-700 dark:text-purple-300 whitespace-nowrap">
+                Max Iterations:
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={recursionLimit}
+                onChange={(e) =>
+                  setRecursionLimit(Math.max(1, parseInt(e.target.value) || 25))
+                }
+                className="w-16 rounded-md border border-purple-200 bg-white px-2 py-1 text-sm text-center focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-purple-700 dark:bg-gray-800 dark:text-white"
+              />
+            </div>
           </div>
         )}
 
-        {selectedSubAgents.length > 0 && (
-          <div className="flex items-center gap-3 mb-3">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-              Max Iterations:
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={recursionLimit}
-              onChange={(e) =>
-                setRecursionLimit(Math.max(1, parseInt(e.target.value) || 25))
-              }
-              className="w-20 rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Controls max rounds between supervisor and sub-agents
-            </span>
-          </div>
-        )}
+        {/* Agent Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search agents..."
+            value={agentSearch}
+            onChange={(e) => setAgentSearch(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
 
-        <div className="rounded-md border border-gray-300 p-4 dark:border-gray-600 dark:bg-gray-800">
+        <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-800/50 min-h-[200px]">
           {agentsLoading ? (
-            <div className="flex items-center justify-center py-4">
+            <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
             </div>
-          ) : availableSubAgents.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              No other agents available. Create more agents to enable
-              multi-agent mode.
+          ) : filteredSubAgents.length === 0 ? (
+            <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+              {agentSearch
+                ? "No agents match your search."
+                : availableSubAgents.length === 0
+                  ? "No other agents available. Create more agents to enable multi-agent mode."
+                  : "No agents available."}
             </p>
           ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                Select agents to delegate tasks to. The agent will act as a
-                supervisor and coordinate with these sub-agents.
-              </p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {availableSubAgents.map((agent) => (
-                  <label
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 max-h-[200px] overflow-y-auto">
+              {filteredSubAgents.map((agent) => {
+                const isSelected = selectedSubAgents.includes(agent.id);
+                return (
+                  <button
                     key={agent.id}
-                    className="flex items-start gap-2 rounded p-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                    type="button"
+                    onClick={() => handleSubAgentToggle(agent.id)}
+                    className={`group relative flex flex-col items-start rounded-lg border p-3 text-left text-sm transition-all ${
+                      isSelected
+                        ? "border-purple-500 bg-purple-50 ring-1 ring-purple-500 dark:bg-purple-900/20 dark:border-purple-400"
+                        : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500"
+                    }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={selectedSubAgents.includes(agent.id)}
-                      onChange={() => handleSubAgentToggle(agent.id)}
-                      className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
-                    />
-                    <div className="text-sm">
-                      <div className="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-200">
-                        <Bot className="h-3 w-3" />
-                        {agent.name}
+                    {isSelected && (
+                      <div className="absolute right-2 top-2 rounded-full bg-purple-500 p-0.5 text-white">
+                        <Check className="h-3 w-3" />
                       </div>
-                      {agent.description && (
-                        <p className="text-xs text-gray-500 line-clamp-2 dark:text-gray-400">
-                          {agent.description}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        {agent.provider} • {agent.modelName}
-                      </p>
+                    )}
+                    <div className="flex items-center gap-1.5 font-medium text-gray-800 dark:text-gray-200">
+                      <Bot className="h-3.5 w-3.5 text-gray-500" />
+                      <span className="truncate">{agent.name}</span>
                     </div>
-                  </label>
-                ))}
-              </div>
+                    {agent.description && (
+                      <p className="mt-1 text-xs text-gray-500 line-clamp-1 dark:text-gray-400">
+                        {agent.description}
+                      </p>
+                    )}
+                    <p className="mt-1.5 text-[10px] text-gray-400 dark:text-gray-500">
+                      {agent.provider} • {agent.modelName}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
+      {/* Actions */}
+      <div className="flex justify-end gap-3 pt-2 border-t dark:border-gray-700">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+          className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
         >
           {isLoading ? (
             <>
