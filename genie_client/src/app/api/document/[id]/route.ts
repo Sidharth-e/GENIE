@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/database/connect";
 import DocumentModel from "@/lib/database/models/Document";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getOptionalSession, getUserId } from "@/lib/auth";
 
 export async function GET(
   req: NextRequest,
@@ -44,10 +43,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-
-  // TODO: Auth check (ensure user owns the document)
-  const userId = (session?.user as any)?.id || "anonymous_user";
+  const session = await getOptionalSession();
+  const userId = getUserId(session);
 
   try {
     await connectDB();
@@ -60,10 +57,10 @@ export async function DELETE(
       );
     }
 
-    if (doc.user_id !== userId) {
-      // return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      // Allow for now since anonymous
-    }
+    // TODO: Enforce ownership check when auth is required
+    // if (doc.user_id !== userId) {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    // }
 
     // Delete from DB
     await DocumentModel.findByIdAndDelete(id);

@@ -1,51 +1,55 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/database/connect";
 import MCPServer, { MCPServerType } from "@/lib/database/models/MCPServer";
-
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getRequiredSession, getUserMetadata } from "@/lib/auth";
 
 export async function GET() {
   try {
     await connectDB();
-    const session = await getServerSession(authOptions);
+    const { session, response } = await getRequiredSession();
+    if (response) return response;
 
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = (session.user as any).id || session.user.email;
+    const userId = session.user.id || session.user.email;
     const servers = await MCPServer.find({ userId }).sort({ createdAt: -1 });
     return NextResponse.json(servers);
   } catch (error) {
     console.error("Error fetching MCP servers:", error);
-    return NextResponse.json({ error: "Failed to fetch MCP servers" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch MCP servers" },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const session = await getServerSession(authOptions);
+    const { session, response } = await getRequiredSession();
+    if (response) return response;
 
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = (session.user as any).id || session.user.email;
+    const { userId, userName, userEmail } = getUserMetadata(session);
     const body = await request.json();
     const { name, type, command, args, env, url, headers } = body;
 
     if (!name || !type) {
-      return NextResponse.json({ error: "Name and type are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Name and type are required" },
+        { status: 400 },
+      );
     }
 
     if (type === "stdio" && !command) {
-      return NextResponse.json({ error: "Command is required for stdio servers" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Command is required for stdio servers" },
+        { status: 400 },
+      );
     }
 
     if (type === "http" && !url) {
-      return NextResponse.json({ error: "URL is required for http servers" }, { status: 400 });
+      return NextResponse.json(
+        { error: "URL is required for http servers" },
+        { status: 400 },
+      );
     }
 
     const server = await MCPServer.create({
@@ -56,31 +60,34 @@ export async function POST(request: Request) {
       env: type === "stdio" ? env : undefined,
       url: type === "http" ? url : undefined,
       headers: type === "http" ? headers : undefined,
-      userId: userId as string,
-      userName: session.user.name || "Unknown",
-      userEmail: session.user.email || "Unknown",
+      userId,
+      userName,
+      userEmail,
     });
 
     return NextResponse.json(server, { status: 201 });
   } catch (error: any) {
     console.error("Error creating MCP server:", error);
     if (error.code === 11000) {
-      return NextResponse.json({ error: "Server name already exists" }, { status: 409 });
+      return NextResponse.json(
+        { error: "Server name already exists" },
+        { status: 409 },
+      );
     }
-    return NextResponse.json({ error: "Failed to create MCP server" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create MCP server" },
+      { status: 500 },
+    );
   }
 }
 
 export async function PATCH(request: Request) {
   try {
     await connectDB();
-    const session = await getServerSession(authOptions);
+    const { session, response } = await getRequiredSession();
+    if (response) return response;
 
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = (session.user as any).id || session.user.email;
+    const userId = session.user.id || session.user.email;
     const body = await request.json();
     const { id, name, type, command, args, env, url, headers, enabled } = body;
 
@@ -107,7 +114,11 @@ export async function PATCH(request: Request) {
       updateData.env = null;
     }
 
-    const server = await MCPServer.findOneAndUpdate({ _id: id, userId }, updateData, { new: true });
+    const server = await MCPServer.findOneAndUpdate(
+      { _id: id, userId },
+      updateData,
+      { new: true },
+    );
 
     if (!server) {
       return NextResponse.json({ error: "Server not found" }, { status: 404 });
@@ -116,24 +127,23 @@ export async function PATCH(request: Request) {
     return NextResponse.json(server);
   } catch (error: any) {
     console.error("Error updating MCP server:", error);
-    // Cast check
     if (error.name === "CastError") {
       return NextResponse.json({ error: "Server not found" }, { status: 404 });
     }
-    return NextResponse.json({ error: "Failed to update MCP server" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update MCP server" },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(request: Request) {
   try {
     await connectDB();
-    const session = await getServerSession(authOptions);
+    const { session, response } = await getRequiredSession();
+    if (response) return response;
 
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = (session.user as any).id || session.user.email;
+    const userId = session.user.id || session.user.email;
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -153,6 +163,9 @@ export async function DELETE(request: Request) {
     if (error.name === "CastError") {
       return NextResponse.json({ error: "Server not found" }, { status: 404 });
     }
-    return NextResponse.json({ error: "Failed to delete MCP server" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete MCP server" },
+      { status: 500 },
+    );
   }
 }

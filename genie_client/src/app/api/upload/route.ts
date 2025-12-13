@@ -3,19 +3,13 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import connectDB from "@/lib/database/connect";
 import DocumentModel from "@/lib/database/models/Document";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getOptionalSession, getUserId } from "@/lib/auth";
 import { extractTextFromFile } from "@/lib/file-processing";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    // TODO: Require authentication in production
-    // if (!session || !session.user) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
-    // Mock user ID for now if no session
-    const userId = (session?.user as any)?.id || "anonymous_user";
+    const session = await getOptionalSession();
+    const userId = getUserId(session);
 
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -60,7 +54,6 @@ export async function POST(req: NextRequest) {
       name: newDoc.name,
       size: newDoc.size,
       type: newDoc.type,
-      // url: `/uploads/${fileName}` // If we serve statically
     });
   } catch (error) {
     console.error("Upload error:", error);
