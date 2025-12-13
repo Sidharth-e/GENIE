@@ -41,7 +41,7 @@ const formatArgs = (args: Record<string, unknown> | string) => {
 
 const ToolCallItem: React.FC<{
   name: string;
-  args: Record<string, unknown>;
+  args: Record<string, unknown> | string;
   id?: string;
   approvalCallbacks?: ToolApprovalCallbacks;
   showApprovalButtons?: boolean;
