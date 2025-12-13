@@ -23,8 +23,114 @@ Secure user authentication is implemented using **NextAuth.js**, supporting mult
 
 The project fully embraces the **Model Context Protocol** for standardized tool usage:
 
-- **FastMCP Server**: The `genie_server` runs a FastMCP instance (`server.py`) exposing tools like `calculate_metrics`, `analyze_sentiment_keyword`, and database access.
+- **FastMCP Server**: The `genie_server` runs a FastMCP instance (`server.py`) exposing 50+ production-ready tools.
 - **Tool Selection**: The frontend (LangGraph agent) dynamically discovers and selects these MCP tools to fulfill user requests, enabling a decoupled and extensible architecture.
+- **Interactive Visualizations**: Charts (pie, bar, line, doughnut) and QR codes render inline in chat responses.
+
+#### 📊 Available MCP Tools
+
+<details>
+<summary><b>🔢 Analytics Tools</b></summary>
+
+| Tool                        | Description                                           |
+| --------------------------- | ----------------------------------------------------- |
+| `calculate_metrics`         | Calculate conversion rate from visits and conversions |
+| `analyze_sentiment_keyword` | Analyze text for positive sentiment keywords          |
+
+</details>
+
+<details>
+<summary><b>💰 Finance Tools</b></summary>
+
+| Tool              | Description                                   |
+| ----------------- | --------------------------------------------- |
+| `get_stock_price` | Get simulated stock price for a ticker symbol |
+
+</details>
+
+<details>
+<summary><b>🗄️ Data Tools</b></summary>
+
+| Tool           | Description                               |
+| -------------- | ----------------------------------------- |
+| `get_userData` | Query MongoDB database for user documents |
+
+</details>
+
+<details>
+<summary><b>📈 Visualization Tools</b></summary>
+
+| Tool                        | Description                                         |
+| --------------------------- | --------------------------------------------------- |
+| `generate_pie_chart`        | Create interactive pie chart with labels and values |
+| `generate_bar_chart`        | Create vertical/horizontal bar chart                |
+| `generate_line_chart`       | Create multi-series line chart for trends           |
+| `generate_doughnut_chart`   | Create doughnut chart (pie with center hole)        |
+| `generate_comparison_chart` | Create grouped bar chart comparing two datasets     |
+
+</details>
+
+<details>
+<summary><b>🛠️ Utility Tools</b></summary>
+
+| Tool                        | Description                                            |
+| --------------------------- | ------------------------------------------------------ |
+| `generate_password`         | Generate secure random password with strength analysis |
+| `generate_uuid`             | Generate UUID v1 (time-based) or v4 (random)           |
+| `hash_text`                 | Hash text using MD5, SHA1, SHA256, or SHA512           |
+| `encode_base64`             | Encode text to Base64 or decode Base64 to text         |
+| `word_count`                | Get word count, reading time, and text statistics      |
+| `calculate_percentage`      | Calculate what percentage a value is of total          |
+| `calculate_discount`        | Calculate discount amount and final price              |
+| `calculate_tip`             | Calculate tip with optional bill splitting             |
+| `calculate_bmi`             | Calculate Body Mass Index from weight/height           |
+| `calculate_loan`            | Calculate monthly payment and total interest           |
+| `convert_temperature`       | Convert between Celsius, Fahrenheit, Kelvin            |
+| `convert_length`            | Convert between metric and imperial length units       |
+| `convert_weight`            | Convert between metric and imperial weight units       |
+| `convert_data_size`         | Convert between B, KB, MB, GB, TB, PB                  |
+| `get_current_datetime`      | Get current date/time with timezone offset             |
+| `calculate_date_difference` | Calculate days/weeks/months between two dates          |
+| `add_days_to_date`          | Add or subtract days from a date                       |
+| `format_json`               | Prettify and validate JSON strings                     |
+| `generate_lorem_ipsum`      | Generate placeholder Lorem Ipsum text                  |
+
+</details>
+
+<details>
+<summary><b>🌐 Web Tools</b></summary>
+
+| Tool               | Description                                      |
+| ------------------ | ------------------------------------------------ |
+| `parse_url`        | Parse URL into components (domain, path, params) |
+| `build_url`        | Build URL from base, path, and query params      |
+| `encode_url`       | URL encode or decode strings                     |
+| `extract_emails`   | Extract all email addresses from text            |
+| `extract_urls`     | Extract all URLs from text                       |
+| `validate_email`   | Validate email format with detailed feedback     |
+| `generate_qr_data` | Generate QR code data (renders in UI)            |
+| `extract_hashtags` | Extract #hashtags from text                      |
+| `extract_mentions` | Extract @mentions from text                      |
+| `analyze_domain`   | Analyze domain name (TLD, subdomain, etc.)       |
+| `slugify`          | Convert text to URL-friendly slug                |
+
+</details>
+
+<details>
+<summary><b>💻 Developer Tools</b></summary>
+
+| Tool                       | Description                                       |
+| -------------------------- | ------------------------------------------------- |
+| `test_regex`               | Test regex pattern and show all matches           |
+| `convert_color`            | Convert between HEX, RGB, and HSL formats         |
+| `generate_color_palette`   | Generate complementary/analogous/triadic palettes |
+| `escape_string`            | Escape for HTML, JSON, regex, SQL, or URL         |
+| `diff_text`                | Compare two texts and show differences            |
+| `minify_json`              | Minify JSON by removing whitespace                |
+| `count_code_lines`         | Count code, comment, and blank lines              |
+| `generate_color_from_text` | Generate consistent color from any text           |
+
+</details>
 
 ### 📝 Prompt Management
 
@@ -175,7 +281,7 @@ To connect the frontend to the backend MCP server:
 ```
 
 > [!NOTE]
-> The tools currently implemented in `genie_server/server.py` (e.g., `calculate_metrics`, `analyze_sentiment_keyword`, `get_stock_price`) are **examples** to demonstrate MCP integration. You should replace them with your own actual business logic or integrations.
+> The MCP tools in `genie_server/app/tools/` provide production-ready functionality including calculators, converters, text analysis, visualization, and developer utilities. You can extend them with your own business logic or integrations.
 
 ## 🛠️ Tech Stack
 
