@@ -138,6 +138,43 @@ export function useChatThread({
                   content: newContent,
                   // Update tool call data if present
                   ...(data.tool_calls && { tool_calls: data.tool_calls }),
+                  // Handle tool_call_chunks merging if present
+                  ...(data.tool_call_chunks &&
+                    data.tool_call_chunks.length > 0 && {
+                      tool_calls: (() => {
+                        const currentCalls = [
+                          ...(currentData.tool_calls || []),
+                        ];
+                        data.tool_call_chunks.forEach((chunk) => {
+                          if (chunk.index !== undefined) {
+                            if (!currentCalls[chunk.index]) {
+                              // Initialize new tool call
+                              currentCalls[chunk.index] = {
+                                name: chunk.name || "",
+                                id: chunk.id || "",
+                                args: chunk.args || "",
+                                type: "tool_call",
+                              };
+                            } else {
+                              // Update existing tool call
+                              const existing = currentCalls[chunk.index];
+                              currentCalls[chunk.index] = {
+                                ...existing,
+                                args:
+                                  (typeof existing.args === "string"
+                                    ? existing.args
+                                    : JSON.stringify(existing.args)) +
+                                  (chunk.args || ""),
+                                ...(chunk.name && { name: chunk.name }),
+                                ...(chunk.id && { id: chunk.id }),
+                              };
+                            }
+                          }
+                        });
+                        return currentCalls;
+                      })(),
+                    }),
+
                   ...(data.additional_kwargs && {
                     additional_kwargs: data.additional_kwargs,
                   }),

@@ -337,57 +337,59 @@ export async function streamResponse(params: {
 }
 
 // Helper function to process any AI message and return the appropriate MessageResponse
+// Helper function to process any AI message and return the appropriate MessageResponse
 function processAIMessage(
   message: Record<string, unknown>,
 ): MessageResponse | null {
-  // Check if this is a tool call (content is array with functionCall)
-  const hasToolCall =
+  // Check if this is a tool call (modern tool_calls or legacy content array)
+  const hasToolCallsData =
+    (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) ||
+    (Array.isArray(message.tool_call_chunks) &&
+      message.tool_call_chunks.length > 0);
+
+  const hasLegacyToolCall =
     Array.isArray(message.content) &&
     message.content.some(
       (item: unknown) =>
         item && typeof item === "object" && "functionCall" in item,
     );
 
-  if (hasToolCall) {
-    // Return full AIMessageData for tool calls to preserve all information
+  // Handle text content extraction
+  let text = "";
+  if (typeof message.content === "string") {
+    text = message.content;
+  } else if (Array.isArray(message.content)) {
+    text = message.content
+      .map((c: string | { text?: string }) =>
+        typeof c === "string" ? c : c?.text || "",
+      )
+      .join("");
+  } else {
+    text = String(message.content ?? "");
+  }
+
+  // If we have tools or text, return the message
+  if (hasToolCallsData || hasLegacyToolCall || text.trim()) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const toolCalls = (message.tool_calls as any[]) || undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const toolCallChunks = (message.tool_call_chunks as any[]) || undefined;
+
     return {
       type: "ai",
       data: {
         id: (message.id as string) || Date.now().toString(),
-        content: typeof message.content === "string" ? message.content : "",
-        tool_calls: (message.tool_calls as ToolCall[]) || undefined,
+        content: text, // Always include text (can be empty)
+        tool_calls: toolCalls,
+        tool_call_chunks: toolCallChunks,
         additional_kwargs:
           (message.additional_kwargs as Record<string, unknown>) || undefined,
         response_metadata:
           (message.response_metadata as Record<string, unknown>) || undefined,
       },
     };
-  } else {
-    // Handle regular text content - extract text from various content types
-    let text = "";
-    if (typeof message.content === "string") {
-      text = message.content;
-    } else if (Array.isArray(message.content)) {
-      text = message.content
-        .map((c: string | { text?: string }) =>
-          typeof c === "string" ? c : c?.text || "",
-        )
-        .join("");
-    } else {
-      text = String(message.content ?? "");
-    }
-
-    // Only return message if we have actual text content
-    if (text.trim()) {
-      return {
-        type: "ai",
-        data: {
-          id: (message.id as string) || Date.now().toString(),
-          content: text,
-        },
-      };
-    }
   }
+
   return null;
 }
 

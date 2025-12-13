@@ -26,7 +26,7 @@ export interface MessageRequest {
 
 export interface ToolCall {
   name: string;
-  args: Record<string, unknown>;
+  args: Record<string, unknown> | string;
   id: string;
   type: "tool_call";
 }

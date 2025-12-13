@@ -1,6 +1,16 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronRight, Settings2Icon, Check, X } from "lucide-react";
-import type { ToolCall, FunctionCall, ToolApprovalCallbacks } from "@/types/message";
+import {
+  ChevronDown,
+  ChevronRight,
+  Settings2Icon,
+  Check,
+  X,
+} from "lucide-react";
+import type {
+  ToolCall,
+  FunctionCall,
+  ToolApprovalCallbacks,
+} from "@/types/message";
 
 interface ToolCallDisplayProps {
   toolCalls?: ToolCall[];
@@ -10,10 +20,21 @@ interface ToolCallDisplayProps {
 }
 
 const formatArgs = (args: Record<string, unknown> | string) => {
-  const argsToFormat = typeof args === "string" ? JSON.parse(args) : args;
+  let argsToFormat = args;
+  if (typeof args === "string") {
+    try {
+      argsToFormat = JSON.parse(args);
+    } catch {
+      // If parsing fails (e.g. partial streaming JSON), keep as string
+      argsToFormat = args;
+    }
+  }
+
   return (
     <pre className="overflow-x-auto rounded bg-gray-100 p-2 text-sm">
-      {JSON.stringify(argsToFormat, null, 2)}
+      {typeof argsToFormat === "string"
+        ? argsToFormat
+        : JSON.stringify(argsToFormat, null, 2)}
     </pre>
   );
 };
@@ -44,7 +65,9 @@ const ToolCallItem: React.FC<{
 
       {isExpanded && (
         <div className="mt-2 ml-6">
-          <div className="mb-1 text-sm font-medium text-gray-700">Arguments:</div>
+          <div className="mb-1 text-sm font-medium text-gray-700">
+            Arguments:
+          </div>
           {formatArgs(args)}
         </div>
       )}
