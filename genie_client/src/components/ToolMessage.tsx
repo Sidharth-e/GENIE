@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { getToolName } from "@/services/messageUtils";
 import { ChartRenderer, parseChartData } from "./ChartRenderer";
+import { QRCodeRenderer, parseQRCodeData } from "./QRCodeRenderer";
 
 interface ToolMessageProps {
   message: MessageResponse;
@@ -138,6 +139,10 @@ export const ToolMessage = ({ message }: ToolMessageProps) => {
   const chartData = parseChartData(content);
   const isChart = chartData !== null;
 
+  // Check if content is QR code data
+  const qrData = parseQRCodeData(content);
+  const isQRCode = qrData !== null;
+
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -191,7 +196,11 @@ export const ToolMessage = ({ message }: ToolMessageProps) => {
         <div className="px-4 pb-3">
           {isChart ? (
             <div className="text-sm text-blue-600 font-medium">
-              📊 Click to view interactive {chartData?.chartType} chart
+              📊 Chart Data (JSON)
+            </div>
+          ) : isQRCode ? (
+            <div className="text-sm text-blue-600 font-medium">
+              📱 QR Code Data (JSON)
             </div>
           ) : (
             formatContent(content, contentType, true)
@@ -206,25 +215,12 @@ export const ToolMessage = ({ message }: ToolMessageProps) => {
       >
         {open && (
           <div className="border-t border-gray-200 p-4">
-            {isChart && chartData ? (
-              <>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium tracking-wide text-gray-600 uppercase">
-                    📊 Interactive Chart
-                  </span>
-                </div>
-                <ChartRenderer data={chartData} />
-              </>
-            ) : (
-              <>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium tracking-wide text-gray-600 uppercase">
-                    {contentType.toUpperCase()} Output
-                  </span>
-                </div>
-                {formatContent(content, contentType)}
-              </>
-            )}
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-medium tracking-wide text-gray-600 uppercase">
+                {contentType.toUpperCase()} Output
+              </span>
+            </div>
+            {formatContent(content, contentType)}
           </div>
         )}
       </div>

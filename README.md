@@ -180,6 +180,8 @@ The project fully embraces the **Model Context Protocol** for standardized tool 
 ![Screenshot 9](./screenshots/image-9.png)
 ![Screenshot 10](./screenshots/image-10.png)
 ![Screenshot 11](./screenshots/image-11.png)
+![Screenshot 12](./screenshots/image-12.png)
+![Screenshot 13](./screenshots/image-13.png)
 
 ## �🚀 Getting Started
 

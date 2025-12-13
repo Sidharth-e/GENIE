@@ -161,9 +161,7 @@ const MessageList = ({
           );
         } else if (message.type === "tool") {
           // Skip rendering chart tool messages separately (they're rendered inline with AI)
-          if (isChartToolMessage(message) || isQRCodeToolMessage(message)) {
-            return null;
-          }
+
           return <ToolMessage key={getMessageId(message)} message={message} />;
         } else if (message.type === "error") {
           return <ErrorMessage key={getMessageId(message)} message={message} />;
