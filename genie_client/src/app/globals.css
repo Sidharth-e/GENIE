@@ -122,6 +122,8 @@
 }
 
 /* Hide ghost copy button from markdown editor */
-.copied {
+/* Hide ghost copy button from markdown editor */
+.copied,
+div[data-code] {
   display: none !important;
 }
