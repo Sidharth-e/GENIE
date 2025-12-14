@@ -40,7 +40,26 @@ export const Table = ({ className, children, ...props }: TableProps) => {
 
   return (
     <div className="!my-6 !rounded-xl !border !border-gray-200 !shadow-sm !bg-white !overflow-hidden !w-fit !max-w-full">
-      <div className="!overflow-x-auto">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        .scrollbar-hide-track::-webkit-scrollbar {
+          height: 6px;
+        }
+        .scrollbar-hide-track::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scrollbar-hide-track::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1;
+          border-radius: 20px;
+        }
+        .scrollbar-hide-track::-webkit-scrollbar-thumb:hover {
+           background-color: #9ca3b8;
+        }
+      `,
+        }}
+      />
+      <div className="!overflow-x-auto scrollbar-hide-track">
         <table
           ref={tableRef}
           className={cn(
