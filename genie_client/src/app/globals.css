@@ -120,3 +120,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide ghost copy button from markdown editor */
+.copied {
+  display: none !important;
+}

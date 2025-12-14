@@ -27,6 +27,15 @@ import {
   type MermaidData,
 } from "./MermaidRenderer";
 import { StatsRenderer, parseStatsData, type StatsData } from "./StatsRenderer";
+import { CodeBlock } from "./markdown/CodeBlock";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./markdown/Table";
 
 interface AIMessageProps {
   message: MessageResponse;
@@ -224,6 +233,16 @@ export const AIMessage = ({
                     fontSize: "1rem",
                   }}
                   rehypePlugins={[rehypeKatex]}
+                  components={{
+                    pre: ({ node, ...props }) => <>{props.children}</>,
+                    code: ({ node, ...props }) => <CodeBlock {...props} />,
+                    table: ({ node, ...props }) => <Table {...props} />,
+                    thead: ({ node, ...props }) => <TableHeader {...props} />,
+                    tbody: ({ node, ...props }) => <TableBody {...props} />,
+                    tr: ({ node, ...props }) => <TableRow {...props} />,
+                    th: ({ node, ...props }) => <TableHead {...props} />,
+                    td: ({ node, ...props }) => <TableCell {...props} />,
+                  }}
                 />
               </div>
             )}
