@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { Maximize2, Minimize2, Move, RotateCcw, X } from "lucide-react";
+import {
+  Maximize2,
+  Minimize2,
+  Move,
+  RotateCcw,
+  X,
+  Maximize,
+  Minimize,
+} from "lucide-react";
 import { motion, useDragControls } from "framer-motion";
 
 interface SandboxProps {
@@ -24,6 +32,7 @@ export const Sandbox = ({
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const dragControls = useDragControls();
 
   // Custom resize state
@@ -170,7 +179,7 @@ export const Sandbox = ({
 
   return createPortal(
     <motion.div
-      drag
+      drag={!isFullScreen}
       dragListener={false}
       dragControls={dragControls}
       dragMomentum={false}
@@ -178,27 +187,33 @@ export const Sandbox = ({
       animate={{
         opacity: 1,
         scale: 1,
-        height: isMinimized ? "auto" : size.height,
-        width: isMinimized ? 300 : size.width,
+        height: isMinimized ? "auto" : isFullScreen ? "100%" : size.height,
+        width: isMinimized ? 300 : isFullScreen ? "100%" : size.width,
+        x: isFullScreen ? 0 : undefined,
+        y: isFullScreen ? 0 : undefined,
       }}
       exit={{ opacity: 0, scale: 0.95 }}
       style={{
         position: "fixed",
-        top: 100,
-        right: 20, // Initial position top-right
         zIndex: 50,
+        ...(isFullScreen
+          ? { top: 0, left: 0, right: 0, bottom: 0 }
+          : { top: 100, right: 20 }),
       }}
       className={cn(
-        "flex flex-col rounded-lg border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900",
-        // Removed resize class to avoid conflict
+        "flex flex-col border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900",
+        isFullScreen ? "rounded-none" : "rounded-lg",
         !isMinimized && "overflow-hidden",
         className,
       )}
     >
       {/* Header / Drag Handle */}
       <div
-        onPointerDown={(e) => dragControls.start(e)}
-        className="flex cursor-move items-center justify-between border-b border-gray-200 bg-gray-100/80 p-2 backdrop-blur dark:border-gray-800 dark:bg-gray-800/80"
+        onPointerDown={(e) => !isFullScreen && dragControls.start(e)}
+        className={cn(
+          "flex items-center justify-between border-b border-gray-200 bg-gray-100/80 p-2 backdrop-blur dark:border-gray-800 dark:bg-gray-800/80",
+          !isFullScreen && "cursor-move",
+        )}
       >
         <div className="flex items-center gap-2">
           <Move className="h-3.5 w-3.5 text-gray-400" />
@@ -213,6 +228,17 @@ export const Sandbox = ({
             title="Reload"
           >
             <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            className="rounded p-1 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
+            title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+          >
+            {isFullScreen ? (
+              <Minimize className="h-3.5 w-3.5" />
+            ) : (
+              <Maximize className="h-3.5 w-3.5" />
+            )}
           </button>
           <button
             onClick={() => setIsMinimized(!isMinimized)}
@@ -271,25 +297,27 @@ export const Sandbox = ({
           )}
 
           {/* Custom Resize Handle */}
-          <div
-            onPointerDown={handleResizeStart}
-            className="absolute bottom-0 right-0 p-1 cursor-nwse-resize hover:bg-gray-200 dark:hover:bg-gray-700 rounded-tl transition-colors z-50"
-          >
-            {/* Simple visual handle */}
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 10 10"
-              className="opacity-50"
+          {!isFullScreen && (
+            <div
+              onPointerDown={handleResizeStart}
+              className="absolute bottom-0 right-0 p-1 cursor-nwse-resize hover:bg-gray-200 dark:hover:bg-gray-700 rounded-tl transition-colors z-50"
             >
-              <path
-                d="M6 10 L10 6 M2 10 L10 2"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
+              {/* Simple visual handle */}
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                className="opacity-50"
+              >
+                <path
+                  d="M6 10 L10 6 M2 10 L10 2"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+          )}
         </div>
       )}
     </motion.div>,
