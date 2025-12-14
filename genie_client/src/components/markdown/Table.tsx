@@ -39,13 +39,13 @@ export const Table = ({ className, children, ...props }: TableProps) => {
   };
 
   return (
-    <div className="!my-6 !rounded-xl !border !border-gray-200 !shadow-sm !bg-white !overflow-hidden">
+    <div className="!my-6 !rounded-xl !border !border-gray-200 !shadow-sm !bg-white !overflow-hidden !w-fit !max-w-full">
       <div className="!overflow-x-auto">
         <table
           ref={tableRef}
           className={cn(
-            "!w-full !text-sm !text-left !border-collapse !m-0 !indent-0",
             className,
+            "!w-full !text-sm !text-left !border-collapse !m-0 !indent-0",
           )}
           {...props}
         >
@@ -115,7 +115,7 @@ export const TableHead = ({
 }: React.ThHTMLAttributes<HTMLTableCellElement>) => (
   <th
     className={cn(
-      "!py-3 !px-6 !text-left !font-medium !text-gray-600 !bg-gray-100 !border-0",
+      "!py-3 !px-6 !text-left !font-medium !text-gray-600 !bg-gray-100 !border-0 !whitespace-nowrap",
       className,
     )}
     {...props}
@@ -127,7 +127,10 @@ export const TableCell = ({
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
   <td
-    className={cn("!py-3 !px-6 !text-gray-600 !border-0", className)}
+    className={cn(
+      "!py-3 !px-6 !text-gray-600 !border-0 !whitespace-nowrap",
+      className,
+    )}
     {...props}
   />
 );
