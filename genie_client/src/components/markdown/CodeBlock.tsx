@@ -22,8 +22,18 @@ export const CodeBlock = ({
   const match = /language-(\w+)/.exec(className || "");
   const language = match ? match[1] : "";
 
-  // Extract code content
-  const codeContent = String(children).replace(/\n$/, "");
+  // Helper to extract text from React children recursively
+  const extractText = (node: any): string => {
+    if (typeof node === "string") return node;
+    if (typeof node === "number") return String(node);
+    if (Array.isArray(node)) return node.map(extractText).join("");
+    if (node && typeof node === "object" && "props" in node) {
+      return extractText(node.props.children);
+    }
+    return "";
+  };
+
+  const codeContent = extractText(children).replace(/\n$/, "");
 
   // Handle inline code - render as simple span/code
   const isInline = !match && !String(children).includes("\n");
