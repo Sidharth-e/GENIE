@@ -2,7 +2,13 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
+import { Check, Download, Image } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  copySvgAsPngToClipboard,
+  downloadSvgAsPng,
+} from "@/lib/download-utils";
 
 /**
  * Mermaid data format returned by MCP tools
@@ -47,6 +53,30 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ data }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [isCopiedImage, setIsCopiedImage] = useState(false);
+
+  const handleDownload = async () => {
+    if (!containerRef.current) return;
+    const svg = containerRef.current.querySelector("svg");
+    if (svg) {
+      const fileName = `mermaid-diagram-${Date.now()}`;
+      await downloadSvgAsPng(svg, fileName);
+    }
+  };
+
+  const handleCopyImage = async () => {
+    if (!containerRef.current) return;
+    const svg = containerRef.current.querySelector("svg");
+    if (svg) {
+      try {
+        await copySvgAsPngToClipboard(svg);
+        setIsCopiedImage(true);
+        setTimeout(() => setIsCopiedImage(false), 2000);
+      } catch {
+        // Ignore errors
+      }
+    }
+  };
 
   useEffect(() => {
     const renderDiagram = async () => {
@@ -59,6 +89,9 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ data }) => {
           theme: "default",
           securityLevel: "loose",
           suppressErrorRendering: true,
+          // Disable htmlLabels to allow exporting as PNG (foreignObject taints canvas)
+          flowchart: { htmlLabels: false },
+          htmlLabels: false,
         });
 
         // Generate a unique ID for the diagram
@@ -107,6 +140,33 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ data }) => {
           />
         )}
       </div>
+
+      {!error && svgContent && (
+        <div className="mt-6 flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopyImage}
+            className="gap-2"
+          >
+            {isCopiedImage ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Image className="h-4 w-4" />
+            )}
+            {isCopiedImage ? "Copied Image" : "Copy Image"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Download PNG
+          </Button>
+        </div>
+      )}
 
       <div className="mt-4 w-full flex justify-end">
         <span className="text-xs text-gray-400 font-mono">Mermaid Diagram</span>
