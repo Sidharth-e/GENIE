@@ -58,6 +58,10 @@ const svgToPngDataUrl = (
           canvas.width = scaledWidth;
           canvas.height = scaledHeight;
 
+          // Fill background with white (prevents black background in some viewers)
+          ctx.fillStyle = "white";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
           // No need to scale context, the image is already large!
           ctx.drawImage(img, 0, 0);
 
