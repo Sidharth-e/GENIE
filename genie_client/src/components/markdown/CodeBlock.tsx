@@ -1,8 +1,9 @@
 "use client";
 
-import { Check, Copy, Terminal } from "lucide-react";
+import { Check, Copy, Play, Terminal, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Sandbox } from "./Sandbox";
 
 interface CodeBlockProps {
   children?: React.ReactNode;
@@ -17,6 +18,7 @@ export const CodeBlock = ({
   ...props
 }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
+  const [showSandbox, setShowSandbox] = useState(false);
 
   // Extract language from className (e.g., "language-python")
   const match = /language-(\w+)/.exec(className || "");
@@ -57,6 +59,16 @@ export const CodeBlock = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const isExecutable = [
+    "javascript",
+    "js",
+    "typescript",
+    "ts",
+    "html",
+    "xml",
+    "markup",
+  ].includes(language.toLowerCase());
+
   return (
     <div className="relative my-4 overflow-hidden rounded-xl border border-gray-200 shadow-sm dark:border-gray-800">
       {/* Header */}
@@ -67,27 +79,52 @@ export const CodeBlock = ({
             {language || "text"}
           </span>
         </div>
-        <button
-          onClick={handleCopy}
-          className={cn(
-            "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-all",
-            "text-gray-500 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100",
-            copied &&
-              "text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400",
+        <div className="flex items-center gap-2">
+          {isExecutable && (
+            <button
+              onClick={() => setShowSandbox(!showSandbox)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-all",
+                "text-gray-500 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100",
+                showSandbox &&
+                  "text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400",
+              )}
+            >
+              {showSandbox ? (
+                <>
+                  <X className="h-3.5 w-3.5" />
+                  <span>Close</span>
+                </>
+              ) : (
+                <>
+                  <Play className="h-3.5 w-3.5" />
+                  <span>Run</span>
+                </>
+              )}
+            </button>
           )}
-        >
-          {copied ? (
-            <>
-              <Check className="h-3.5 w-3.5" />
-              <span>Copied</span>
-            </>
-          ) : (
-            <>
-              <Copy className="h-3.5 w-3.5" />
-              <span>Copy</span>
-            </>
-          )}
-        </button>
+          <button
+            onClick={handleCopy}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-all",
+              "text-gray-500 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100",
+              copied &&
+                "text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400",
+            )}
+          >
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5" />
+                <span>Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Code Content */}
@@ -102,6 +139,15 @@ export const CodeBlock = ({
           {children}
         </code>
       </div>
+
+      {/* Sandbox */}
+      {showSandbox && (
+        <Sandbox
+          code={codeContent}
+          language={language}
+          onClose={() => setShowSandbox(false)}
+        />
+      )}
     </div>
   );
 };
