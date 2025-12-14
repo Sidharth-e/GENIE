@@ -26,9 +26,41 @@ export const Sandbox = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const dragControls = useDragControls();
 
+  // Custom resize state
+  const [size, setSize] = useState({ width: 600, height: 400 });
+  const [isResizing, setIsResizing] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      if (isResizing) {
+        setSize((prev) => ({
+          width: Math.max(400, prev.width + e.movementX),
+          height: Math.max(300, prev.height + e.movementY),
+        }));
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (isResizing) {
+        setIsResizing(false);
+        document.body.style.cursor = "default";
+      }
+    };
+
+    if (isResizing) {
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
+    }
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [isResizing]);
 
   const getSrcDoc = () => {
     // Base styles for the iframe to look decent
@@ -127,6 +159,13 @@ export const Sandbox = ({
     }
   };
 
+  const handleResizeStart = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    document.body.style.cursor = "nwse-resize";
+  };
+
   if (!mounted) return null;
 
   return createPortal(
@@ -139,8 +178,8 @@ export const Sandbox = ({
       animate={{
         opacity: 1,
         scale: 1,
-        height: isMinimized ? "auto" : "auto",
-        width: isMinimized ? 300 : "auto",
+        height: isMinimized ? "auto" : size.height,
+        width: isMinimized ? 300 : size.width,
       }}
       exit={{ opacity: 0, scale: 0.95 }}
       style={{
@@ -151,7 +190,8 @@ export const Sandbox = ({
       }}
       className={cn(
         "flex flex-col rounded-lg border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900",
-        !isMinimized && "resize overflow-auto min-w-[400px] min-h-[300px]",
+        // Removed resize class to avoid conflict
+        !isMinimized && "overflow-hidden",
         className,
       )}
     >
@@ -197,12 +237,15 @@ export const Sandbox = ({
 
       {/* Content Area */}
       {!isMinimized && (
-        <div className="flex flex-col flex-1 p-2 gap-2 h-full">
+        <div className="flex flex-col flex-1 p-2 gap-2 h-full relative">
           <div className="relative flex-1 min-h-[200px] bg-white dark:bg-black rounded border border-gray-200 dark:border-gray-800 overflow-hidden">
             <iframe
               ref={iframeRef}
               srcDoc={getSrcDoc()}
-              className="absolute inset-0 w-full h-full border-0"
+              className={cn(
+                "absolute inset-0 w-full h-full border-0",
+                isResizing && "pointer-events-none", // Prevent iframe consuming events during resize
+              )}
               title="sandbox"
               sandbox="allow-scripts"
             />
@@ -226,6 +269,27 @@ export const Sandbox = ({
               ))}
             </div>
           )}
+
+          {/* Custom Resize Handle */}
+          <div
+            onPointerDown={handleResizeStart}
+            className="absolute bottom-0 right-0 p-1 cursor-nwse-resize hover:bg-gray-200 dark:hover:bg-gray-700 rounded-tl transition-colors z-50"
+          >
+            {/* Simple visual handle */}
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              className="opacity-50"
+            >
+              <path
+                d="M6 10 L10 6 M2 10 L10 2"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
         </div>
       )}
     </motion.div>,
