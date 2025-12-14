@@ -3,23 +3,39 @@
  */
 const svgToPngDataUrl = (
   svgElement: SVGSVGElement,
-  scale = 2,
+  scale = 8,
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     try {
       // Create a clone to not mess with the DOM
       const clone = svgElement.cloneNode(true) as SVGSVGElement;
 
-      // Get dimensions
-      const width =
-        parseInt(svgElement.getAttribute("width") || "0") ||
-        svgElement.getBoundingClientRect().width;
-      const height =
-        parseInt(svgElement.getAttribute("height") || "0") ||
-        svgElement.getBoundingClientRect().height;
+      // Get accurate dimensions
+      const bbox = svgElement.getBoundingClientRect();
+      const width = bbox.width;
+      const height = bbox.height;
 
-      clone.setAttribute("width", width.toString());
-      clone.setAttribute("height", height.toString());
+      if (width === 0 || height === 0) {
+        reject(new Error("SVG has invalid dimensions"));
+        return;
+      }
+
+      // Ensure viewBox exists so the SVG scales correctly
+      if (!clone.getAttribute("viewBox")) {
+        clone.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      }
+
+      // Explicitly set dimensions on the clone to the scaled size
+      // This forces the browser to rasterize the SVG at high resolution
+      const scaledWidth = width * scale;
+      const scaledHeight = height * scale;
+
+      clone.setAttribute("width", scaledWidth.toString());
+      clone.setAttribute("height", scaledHeight.toString());
+
+      // Also set style to ensure it takes precedence over CSS classes
+      clone.style.width = `${scaledWidth}px`;
+      clone.style.height = `${scaledHeight}px`;
 
       const svgData = new XMLSerializer().serializeToString(clone);
       const canvas = document.createElement("canvas");
@@ -38,12 +54,14 @@ const svgToPngDataUrl = (
 
       img.onload = () => {
         try {
-          canvas.width = width * scale;
-          canvas.height = height * scale;
-          ctx.scale(scale, scale);
+          // Canvas size matches the scaleld image size directly
+          canvas.width = scaledWidth;
+          canvas.height = scaledHeight;
+
+          // No need to scale context, the image is already large!
           ctx.drawImage(img, 0, 0);
 
-          const jpgUrl = canvas.toDataURL("image/png");
+          const jpgUrl = canvas.toDataURL("image/png", 1.0); // Use max quality
           URL.revokeObjectURL(url);
           resolve(jpgUrl);
         } catch (e) {
@@ -70,7 +88,7 @@ const svgToPngDataUrl = (
 export const downloadSvgAsPng = async (
   svgElement: SVGSVGElement,
   fileName: string,
-  scale = 2,
+  scale = 8,
 ) => {
   try {
     const dataUrl = await svgToPngDataUrl(svgElement, scale);
@@ -91,7 +109,7 @@ export const downloadSvgAsPng = async (
  */
 export const copySvgAsPngToClipboard = async (
   svgElement: SVGSVGElement,
-  scale = 2,
+  scale = 8,
 ) => {
   try {
     const dataUrl = await svgToPngDataUrl(svgElement, scale);
